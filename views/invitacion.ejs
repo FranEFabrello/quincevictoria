@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis 15 Años - Te invito a mi noche mágica</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400&display=swap');
+        :root {
+            --font-titles: 'Playfair Display', serif;
+            --font-text: 'Lato', sans-serif;
+            --color-primary: #a7c7e7;
+            --color-bg: #fdfdfd;
+            --color-dark: #444;
+            --color-light: #fff;
+        }
+
+        body {
+            font-family: var(--font-text);
+            margin: 0;
+            padding: 0;
+            color: var(--color-dark);
+            text-align: center;
+            background-color: #e8e8e8;
+        }
+
+        .hero h1, .hero p,
+        .section h2, .section p,
+        #countdown > div span, #countdown > div small {
+            color: var(--color-light);
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        #parallax-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .parallax-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-position: center top;
+            background-repeat: no-repeat;
+            background-size: cover;
+            transition: background-position 0.3s;
+        }
+
+        #content-wrapper {
+            position: relative;
+            z-index: 2;
+            background-color: transparent;
+        }
+
+        #leaves-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(110vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .hero {
+            position: relative;
+            height: 100vh;
+            width: 100%;
+            background-image: url('https://iswrdjaneaucntznqyjh.supabase.co/storage/v1/object/public/victoria//arbol_1.png');
+            background-repeat: no-repeat;
+            background-position: center top;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hero h1,
+        .hero p {
+            position: relative;
+            z-index: 3; /* por arriba del glass */
+            margin: 0;
+        }
+        .hero h1 {
+            color: #70A0C8;
+            font-size: 3.3em;
+            font-family: var(--font-titles);
+            letter-spacing: 0.05em;
+            text-shadow:
+                    0 6px 28px rgba(20,30,70,0.40),
+                    0 1px 4px rgba(20,30,70,0.24);
+            margin-bottom: 0.2em;
+        }
+        .hero p {
+            color: #fff;
+            font-size: 1.12em;
+            font-family: var(--font-text);
+            text-shadow: 0 2.5px 10px rgba(20,30,70,0.26);
+            margin-top: 0.18em;
+        }
+
+        .arbusto-section {
+            width: 100vw;
+            min-width: 100%;
+            aspect-ratio: 4911 / 3099;   /* O simplemente 1.585 / 1 */
+            background-image: url('https://iswrdjaneaucntznqyjh.supabase.co/storage/v1/object/public/victoria//separador_gato.png');
+            background-repeat: no-repeat;
+            background-position: center bottom;
+            background-size: cover;
+            display: block;
+            position: relative;
+            margin-top: -55vw;           /* Ajustá según solape, probá -8vw, -14vw, etc */
+            z-index: 10;
+            overflow: visible;
+            border: none;
+            background-color: transparent;
+        }
+
+        .arbusto2-section {
+            width: 100vw;
+            min-width: 100%;
+            height: 175px;
+            background-image: url('https://iswrdjaneaucntznqyjh.supabase.co/storage/v1/object/public/victoria//separador_2.png');
+            background-repeat: no-repeat;
+            background-position: center bottom;
+            background-size: cover;
+            display: block;
+            position: relative;
+            margin-top: -5vh; /* MODIFICADO: De px a vh para ser adaptable */
+            z-index: 10;
+            overflow: visible;
+            border: none;
+            background-color: transparent;
+        }
+
+        .arbusto3-section {
+            width: 100vw;
+            min-width: 100%;
+            height: 175px;
+            background-image: url('https://iswrdjaneaucntznqyjh.supabase.co/storage/v1/object/public/victoria//separador_3.png');
+            background-repeat: no-repeat;
+            background-position: center bottom;
+            background-size: cover;
+            display: block;
+            position: relative;
+            margin-top: -5vh; /* MODIFICADO: De px a vh para ser adaptable */
+            z-index: 10;
+            overflow: visible;
+            border: none;
+            background-color: transparent;
+        }
+
+        .section {
+            padding: 35px 20px;
+            max-width: 800px;
+            margin: 20px auto;
+            background: linear-gradient(to bottom,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0.1) 30%,
+            rgba(0, 0, 0, 0.2) 100%);
+            backdrop-filter: blur(5px);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .countdown-section {
+            position: relative;
+            padding: 18px 20px 34px 20px;
+            margin: -12px auto 20px auto;
+            border-radius: 18px;
+            max-width: 700px;
+            box-shadow: 0 4px 18px rgba(80,90,100,0.07);
+            background: rgba(255,255,255,0.13);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1.5px solid rgba(255,255,255,0.11);
+            -webkit-mask-image: -webkit-linear-gradient(top, transparent 0%, black 8%, black 92%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+            z-index: 2;
+        }
+
+        #countdown {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 18px;
+            padding: 0 5vw;
+            flex-wrap: wrap; /* AÑADIDO: Permite que los elementos pasen a la siguiente línea si no caben */
+        }
+
+        #countdown > div {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(7px);
+            padding: 13px 5px 8px 5px; /* MODIFICADO: Padding horizontal ajustado */
+            border-radius: 16px;
+            margin: 0;
+            box-shadow: 0 2px 8px rgba(100,120,130,0.09);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            /* MODIFICADO: Se usa flexbox para un ancho adaptable */
+            flex-grow: 1;
+            flex-basis: 60px;
+            max-width: 80px;
+        }
+
+        #countdown span {
+            display: block;
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 2px;
+            letter-spacing: 1px;
+        }
+        #countdown small {
+            font-size: 0.85em;
+            margin-top: 2px;
+            font-weight: 300;
+        }
+
+        #music-player {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 999;
+        }
+        #music-toggle {
+            background: var(--color-primary);
+            color: var(--color-light);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.2em;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .card {
+            margin: auto;
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            color: var(--color-dark);
+        }
+        .form-group { margin-bottom: 25px;
+        }
+        label { margin: 0 10px;
+        }
+        select {
+            width: 80px;
+            text-align: center;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+            color: var(--color-dark);
+        }
+        button[type="submit"] {
+            background-color: var(--color-primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        button[type="submit"]:hover { background-color: #89a8c6;
+        }
+
+        #sticky-tree {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto 1.5em auto;
+            display: block;
+            position: relative;
+            z-index: 2;
+        }
+        #sticky-tree img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        #victoria-text {
+            text-shadow: 2px 2px 4px #000000, -2px -2px 4px #000000;
+            color: #ffffff; /* Blanco para contraste */
+        }
+
+        /* AÑADIDO: Media Query para pantallas pequeñas */
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 2.5em; /* Reduce el tamaño de la fuente para el título */
+            }
+
+            .hero p {
+                font-size: 1em; /* Reduce el tamaño del párrafo */
+            }
+
+            #countdown span {
+                font-size: 1.5em; /* Reduce el tamaño de los números del contador */
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="parallax-container">
+    <div class="parallax-layer" id="parallax-bg" style="background-image: url('https://iswrdjaneaucntznqyjh.supabase.co/storage/v1/object/public/victoria//fondo_1.png');"></div>
+    <div id="leaves-container"></div>
+</div>
+
+<div id="content-wrapper">
+    <div id="music-player">
+        <audio id="background-music" src="https://iswrdjaneaucntznqyjh.supabase.co/storage/v1/object/public/victoria//musica%20invitacion%203m.mp3" loop></audio>
+        <button id="music-toggle" aria-label="Controlar Música"><i class="fas fa-play"></i></button>
+    </div>
+
+    <header class="hero">
+        <h1 class="victoria-text">VICTORIA</h1>
+        <p>Te invito a celebrar</p>
+        <p>Mis
+            15 Años</p>
+    </header>
+
+    <div class="arbusto-section"></div>
+
+    <main>
+        <section class="section countdown-section">
+            <h2>Comienza la cuenta regresiva</h2>
+            <div id="countdown">
+                <div><span id="days">00</span><small>Días</small></div>
+                <div><span id="hours">00</span><small>Horas</small></div>
+                <div><span id="minutes">00</span><small>Minutos</small></div>
+                <div><span id="seconds">00</span><small>Segundos</small></div>
+            </div>
+        </section>
+
+        <div class="arbusto2-section" style="transform: scaleX(-1);"></div>
+
+        <section class="section">
+            <h2>La Fiesta</h2>
+            <p>Tengo el agrado de invitarte a la celebración de mis quince años.<br>¡Quiero que seas parte
+                de mi noche soñada!</p>
+            <p><strong>Fecha:</strong> SÁBADO, 22 DE NOVIEMBRE DE 2025</p>
+            <p><strong>Hora:</strong> 21:00 hs</p>
+            <p><strong>Lugar:</strong> Salón "El Paraíso", Av.
+                Siempre Viva 123, Ciudad.</p>
+        </section>
+
+        <div class="arbusto2-section"></div>
+
+        <section class="section">
+            <h2>Regalos</h2>
+            <p>El mejor regalo es que me acompañes en esta noche única.<br>Si aún así deseas obsequiarme algo, puedes hacerlo en el buzón que encontraré en la fiesta.</p>
+        </section>
+
+        <div class="arbusto3-section"></div>
+
+        <section class="section">
+            <h2>Confirmar Asistencia</h2>
+            <div class="card">
+                <h3>¡Hola, <%= invitado.nombre %> <%= invitado.apellido %>!</h3>
+                <p>Tu invitación es válida para <strong><%= invitado.cantidad %> persona(s)</strong>.</p>
+                <p>Por favor, confirma tu asistencia antes del 10
+                    de Noviembre.</p>
+                <form action="/confirmar/<%= invitado.id %>" method="POST">
+                    <div class="form-group">
+                        <input type="radio" id="asistencia_si" name="decision" value="confirmado" checked onchange="toggleCantidad(true)">
+                        <label for="asistencia_si">Sí, asistiré</label>
+                        <input type="radio" id="asistencia_no" name="decision" value="rechazado" onchange="toggleCantidad(false)">
+                        <label for="asistencia_no">No podré asistir</label>
+                    </div>
+                    <div id="cantidad-group" class="form-group">
+                        <label for="cantidad">¿Cuántos de los <%= invitado.cantidad %> asistirán?</label><br><br>
+                        <select id="cantidad" name="confirmados" required>
+                            <% for(let i = 1;
+                                   i <= invitado.cantidad; i++) { %>
+                                <option value="<%= i %>"><%= i %></option>
+                            <% } %>
+                        </select>
+                    </div>
+                    <button type="submit">Enviar Confirmación</button>
+                </form>
+            </div>
+        </section>
+    </main>
+</div>
+
+
+<script>
+    const countdown = () => {
+        const targetDate = new Date('November 29, 2025 21:00:00').getTime();
+        const now = new Date().getTime();
+        const gap = targetDate - now;
+        const second = 1000, minute = second * 60, hour = minute * 60, day = hour * 24;
+        const textDay = Math.floor(gap / day);
+        const textHour = Math.floor((gap % day) / hour);
+        const textMinute = Math.floor((gap % hour) / minute);
+        const textSecond = Math.floor((gap % minute) / second);
+
+        document.getElementById('days').innerText = String(textDay).padStart(2, '0');
+        document.getElementById('hours').innerText = String(textHour).padStart(2, '0');
+        document.getElementById('minutes').innerText = String(textMinute).padStart(2, '0');
+        document.getElementById('seconds').innerText = String(textSecond).padStart(2, '0');
+    };
+    setInterval(countdown, 1000);
+
+
+    const music = document.getElementById('background-music');
+    const musicBtn = document.getElementById('music-toggle');
+    const musicIcon = musicBtn.querySelector('i');
+    let hasInteracted = false;
+    const toggleMusic = () => {
+        if (!hasInteracted) hasInteracted = true;
+        if (music.paused) {
+            music.play();
+            musicIcon.className = 'fas fa-pause';
+        } else {
+            music.pause();
+            musicIcon.className = 'fas fa-play';
+        }
+    };
+    musicBtn.addEventListener('click', toggleMusic);
+    document.body.addEventListener('click', () => {
+        if (!hasInteracted && music.paused) {
+            music.play().then(() => {
+                hasInteracted = true;
+                musicIcon.className = 'fas fa-pause';
+            }).catch(e => console.log("El navegador bloqueó la reproducción automática."));
+        }
+    }, { once: true });
+
+    function toggleCantidad(mostrar) {
+        const cantidadGroup = document.getElementById('cantidad-group');
+        const cantidadInput = document.getElementById('cantidad');
+        cantidadGroup.style.display = mostrar ? 'block' : 'none';
+        cantidadInput.required = mostrar;
+    }
+
+    const bgLayer = document.getElementById('parallax-bg');
+    window.addEventListener('scroll', () => {
+        const docHeight = document.body.scrollHeight - window.innerHeight;
+        const scrollY = window.scrollY;
+        const percent = docHeight === 0 ? 0 : scrollY / docHeight;
+        bgLayer.style.backgroundPosition = `center ${percent * 100}%`;
+    });
+    const leavesContainer = document.getElementById('leaves-container');
+    function createLeaf() {
+        const leaf = document.createElement('div');
+        leaf.classList.add('leaf');
+        leaf.style.left = `${Math.random() * 100}vw`;
+        leaf.style.animationDuration = `${Math.random() * 5 + 8}s`;
+        leaf.style.animationDelay = `${Math.random() * 5}s`;
+        leavesContainer.appendChild(leaf);
+        setTimeout(() => {
+            leaf.remove();
+        }, 13000);
+    }
+
+    setTimeout(() => {
+        setInterval(createLeaf, 700);
+    }, 1000);
+</script>
+
+</body>
+</html>
