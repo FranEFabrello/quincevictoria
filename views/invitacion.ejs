@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400&display=swap');
+
         :root {
             --font-titles: 'Playfair Display', serif;
             --font-text: 'Lato', sans-serif;
@@ -27,9 +28,8 @@
 
         .hero h1, .hero p,
         .section h2, .section p,
-        #countdown > div span, #countdown > div small {
+        #countdown>div span, #countdown>div small {
             color: var(--color-light);
-            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
         }
 
         #parallax-container {
@@ -74,6 +74,7 @@
                 transform: translateY(0) rotate(0deg);
                 opacity: 1;
             }
+
             100% {
                 transform: translateY(110vh) rotate(360deg);
                 opacity: 0;
@@ -90,45 +91,50 @@
             background-size: cover;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            align-items: center;
+            /* NO USAR justify-content ni padding-top */
+        }
+
+        /* ===== INICIO DE CAMBIOS ===== */
+
+        .hero-box {
+            padding: 1.1em 0.7em;
+            max-width: 94vw;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
             align-items: center;
         }
 
-        .hero h1,
-        .hero p {
-            position: relative;
-            z-index: 3; /* por arriba del glass */
-            margin: 0;
-        }
-        .hero h1 {
+        .hero-box h1 {
             color: #70A0C8;
-            font-size: 3.3em;
+            font-size: clamp(2.4em, 8vw, 4em);
             font-family: var(--font-titles);
             letter-spacing: 0.05em;
-            text-shadow:
-                    0 6px 28px rgba(20,30,70,0.40),
-                    0 1px 4px rgba(20,30,70,0.24);
-            margin-bottom: 0.2em;
+            margin-bottom: 0.12em;
         }
-        .hero p {
-            color: #fff;
-            font-size: 1.12em;
-            font-family: var(--font-text);
-            text-shadow: 0 2.5px 10px rgba(20,30,70,0.26);
-            margin-top: 0.18em;
+
+        .hero-box p {
+            color: #364b6e;
+            margin: 0.12em 0;
+            line-height: 1.18;
+            font-size: 1.1em;
         }
+
 
         .arbusto-section {
             width: 100vw;
             min-width: 100%;
-            aspect-ratio: 4911 / 3099;   /* O simplemente 1.585 / 1 */
+            aspect-ratio: 4911 / 3099;
+            /* O simplemente 1.585 / 1 */
             background-image: url('https://iswrdjaneaucntznqyjh.supabase.co/storage/v1/object/public/victoria//separador_gato.png');
             background-repeat: no-repeat;
             background-position: center bottom;
             background-size: cover;
             display: block;
             position: relative;
-            margin-top: -55vw;           /* Ajustá según solape, probá -8vw, -14vw, etc */
+            margin-top: -55vw;
+            /* Ajustá según solape, probá -8vw, -14vw, etc */
             z-index: 10;
             overflow: visible;
             border: none;
@@ -145,7 +151,8 @@
             background-size: cover;
             display: block;
             position: relative;
-            margin-top: -5vh; /* MODIFICADO: De px a vh para ser adaptable */
+            margin-top: -5vh;
+            /* MODIFICADO: De px a vh para ser adaptable */
             z-index: 10;
             overflow: visible;
             border: none;
@@ -162,7 +169,8 @@
             background-size: cover;
             display: block;
             position: relative;
-            margin-top: -5vh; /* MODIFICADO: De px a vh para ser adaptable */
+            margin-top: -5vh;
+            /* MODIFICADO: De px a vh para ser adaptable */
             z-index: 10;
             overflow: visible;
             border: none;
@@ -179,7 +187,7 @@
             rgba(0, 0, 0, 0.2) 100%);
             backdrop-filter: blur(5px);
             border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         .countdown-section {
@@ -188,11 +196,11 @@
             margin: -12px auto 20px auto;
             border-radius: 18px;
             max-width: 700px;
-            box-shadow: 0 4px 18px rgba(80,90,100,0.07);
-            background: rgba(255,255,255,0.13);
+            box-shadow: 0 4px 18px rgba(80, 90, 100, 0.07);
+            background: rgba(255, 255, 255, 0.13);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 1.5px solid rgba(255,255,255,0.11);
+            border: 1.5px solid rgba(255, 255, 255, 0.11);
             -webkit-mask-image: -webkit-linear-gradient(top, transparent 0%, black 8%, black 92%, transparent 100%);
             mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
             z-index: 2;
@@ -201,19 +209,21 @@
         #countdown {
             display: flex;
             justify-content: center;
-            gap: 12px;
+            gap: 5px;
             margin-top: 18px;
             padding: 0 5vw;
-            flex-wrap: wrap; /* AÑADIDO: Permite que los elementos pasen a la siguiente línea si no caben */
+            flex-wrap: wrap;
+            /* AÑADIDO: Permite que los elementos pasen a la siguiente línea si no caben */
         }
 
-        #countdown > div {
+        #countdown>div {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(7px);
-            padding: 13px 5px 8px 5px; /* MODIFICADO: Padding horizontal ajustado */
+            padding: 13px 5px 8px 5px;
+            /* MODIFICADO: Padding horizontal ajustado */
             border-radius: 16px;
             margin: 0;
-            box-shadow: 0 2px 8px rgba(100,120,130,0.09);
+            box-shadow: 0 2px 8px rgba(100, 120, 130, 0.09);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -234,6 +244,7 @@
             margin-bottom: 2px;
             letter-spacing: 1px;
         }
+
         #countdown small {
             font-size: 0.85em;
             margin-top: 2px;
@@ -246,6 +257,7 @@
             right: 20px;
             z-index: 999;
         }
+
         #music-toggle {
             background: var(--color-primary);
             color: var(--color-light);
@@ -255,22 +267,27 @@
             border-radius: 50%;
             font-size: 1.2em;
             cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
 
         .card {
             margin: auto;
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgb(137, 168, 198);
             backdrop-filter: blur(8px);
             padding: 40px;
             border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             color: var(--color-dark);
         }
-        .form-group { margin-bottom: 25px;
+
+        .form-group {
+            margin-bottom: 25px;
         }
-        label { margin: 0 10px;
+
+        label {
+            margin: 0 10px;
         }
+
         select {
             width: 80px;
             text-align: center;
@@ -280,6 +297,7 @@
             font-size: 1em;
             color: var(--color-dark);
         }
+
         button[type="submit"] {
             background-color: var(--color-primary);
             color: white;
@@ -291,7 +309,9 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
-        button[type="submit"]:hover { background-color: #89a8c6;
+
+        button[type="submit"]:hover {
+            background-color: #89a8c6;
         }
 
         #sticky-tree {
@@ -302,31 +322,151 @@
             position: relative;
             z-index: 2;
         }
+
         #sticky-tree img {
             width: 100%;
             height: auto;
             display: block;
         }
 
-        #victoria-text {
-            text-shadow: 2px 2px 4px #000000, -2px -2px 4px #000000;
-            color: #ffffff; /* Blanco para contraste */
-        }
 
         /* AÑADIDO: Media Query para pantallas pequeñas */
         @media (max-width: 480px) {
             .hero h1 {
-                font-size: 2.5em; /* Reduce el tamaño de la fuente para el título */
+                font-size: 3em;
             }
 
             .hero p {
-                font-size: 1em; /* Reduce el tamaño del párrafo */
+                font-size: 1.3em;
             }
 
             #countdown span {
-                font-size: 1.5em; /* Reduce el tamaño de los números del contador */
+                font-size: 1.5em;
+                /* Reduce el tamaño de los números del contador */
             }
         }
+
+
+        .blur-fade {
+            position: relative;
+            padding: 20px 20px;
+            margin-top: 35vw;
+            width: 100vw;
+            box-shadow: 0 4px 18px rgba(80, 90, 100, 0.07);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            -webkit-mask-image: -webkit-linear-gradient(top, transparent 0%, black 5%, black 95%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+            z-index: 2;
+            text-align: center;
+            border-radius: 0;
+        }
+
+        /* Resetear márgenes internos para lograr padding visual simétrico */
+        .blur-fade h1,
+        .blur-fade p {
+            margin: 0.2em 0; /* ajustá este valor para más o menos separación vertical */
+        }
+
+        /*--------------------------------------------*/
+
+        /* --- INICIO DE ESTILOS PARA CONFIRMACIÓN MÓVIL --- */
+
+        /* Ocultamos los puntos de radio originales */
+        .decision-buttons input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* Contenedor para los dos botones. Usamos flexbox para que se adapten */
+        .decision-buttons {
+            display: flex;
+            flex-direction: column; /* Apilados verticalmente en móvil para más claridad */
+            gap: 12px; /* Espacio entre los botones */
+            margin-bottom: 30px;
+        }
+
+        /* Estilo de cada botón (la etiqueta) */
+        .decision-buttons label {
+            display: block;
+            padding: 18px 15px; /* Padding generoso para facilitar el toque */
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Estilo para el texto dentro del botón */
+        .decision-buttons label span {
+            font-size: 1.1em;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px; /* Espacio entre el ícono y el texto */
+        }
+
+        /* Efecto al pasar el mouse (en desktop) o al tocar */
+        .decision-buttons label:hover {
+            background-color: #f5f5f5;
+            border-color: #ccc;
+        }
+
+        /* ESTILOS CLAVE: El botón cambia de apariencia cuando está seleccionado */
+        .decision-buttons input[type="radio"]:checked + span {
+            font-weight: bold;
+        }
+
+        /* Estilo del botón "Sí" seleccionado */
+        label:has(#asistencia_si:checked) {
+            background-color: #e8f5e9;
+            border-color: #3a7d44;
+            color: #3a7d44;
+        }
+
+        /* Estilo del botón "No" seleccionado */
+        label:has(#asistencia_no:checked) {
+            background-color: #ffebee;
+            border-color: #b71c1c;
+            color: #b71c1c;
+        }
+
+
+        /* Ajustes para la sección de cantidad de asistentes */
+        #cantidad-group {
+            text-align: center;
+            padding: 20px 15px;
+            background-color: rgba(245, 245, 245, 0.5);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        #cantidad-group label {
+            display: block;
+            margin: 0 0 15px 0;
+            font-weight: 400;
+            color: var(--color-dark);
+        }
+
+        /* Media Query para pantallas más grandes (opcional, pero recomendado) */
+        @media (min-width: 500px) {
+            .decision-buttons {
+                flex-direction: row; /* En pantallas más grandes, los ponemos uno al lado del otro */
+            }
+        }
+
+        /* --- FIN DE ESTILOS --- */
+
+
+
+
+
 
     </style>
 </head>
@@ -344,11 +484,17 @@
     </div>
 
     <header class="hero">
-        <h1 class="victoria-text">VICTORIA</h1>
-        <p>Te invito a celebrar</p>
-        <p>Mis
-            15 Años</p>
+        <div class="hero-box">
+            <div class="blur-fade">
+                <h1>VICTORIA</h1>
+                <p>Te invito a celebrar</p>
+                <p>Mis 15 Años</p>
+            </div>
+        </div>
     </header>
+
+
+
 
     <div class="arbusto-section"></div>
 
@@ -389,24 +535,30 @@
             <div class="card">
                 <h3>¡Hola, <%= invitado.nombre %> <%= invitado.apellido %>!</h3>
                 <p>Tu invitación es válida para <strong><%= invitado.cantidad %> persona(s)</strong>.</p>
-                <p>Por favor, confirma tu asistencia antes del 10
-                    de Noviembre.</p>
+                <p>Por favor, confirma tu asistencia antes del 10 de Noviembre.</p>
+
                 <form action="/confirmar/<%= invitado.id %>" method="POST">
-                    <div class="form-group">
-                        <input type="radio" id="asistencia_si" name="decision" value="confirmado" checked onchange="toggleCantidad(true)">
-                        <label for="asistencia_si">Sí, asistiré</label>
-                        <input type="radio" id="asistencia_no" name="decision" value="rechazado" onchange="toggleCantidad(false)">
-                        <label for="asistencia_no">No podré asistir</label>
+
+                    <div class="form-group decision-buttons">
+                        <label>
+                            <input type="radio" id="asistencia_si" name="decision" value="confirmado" checked onchange="toggleCantidad(true)">
+                            <span><i class="fas fa-check"></i> Sí, asistiré</span>
+                        </label>
+                        <label>
+                            <input type="radio" id="asistencia_no" name="decision" value="rechazado" onchange="toggleCantidad(false)">
+                            <span><i class="fas fa-times"></i> No podré asistir</span>
+                        </label>
                     </div>
+
                     <div id="cantidad-group" class="form-group">
-                        <label for="cantidad">¿Cuántos de los <%= invitado.cantidad %> asistirán?</label><br><br>
+                        <label for="cantidad">¿Cuántos de los <%= invitado.cantidad %> asistirán?</label>
                         <select id="cantidad" name="confirmados" required>
-                            <% for(let i = 1;
-                                   i <= invitado.cantidad; i++) { %>
+                            <% for(let i = 1; i <= invitado.cantidad; i++) { %>
                                 <option value="<%= i %>"><%= i %></option>
                             <% } %>
                         </select>
                     </div>
+
                     <button type="submit">Enviar Confirmación</button>
                 </form>
             </div>
@@ -488,6 +640,10 @@
     setTimeout(() => {
         setInterval(createLeaf, 700);
     }, 1000);
+
+
+
+
 </script>
 
 </body>
