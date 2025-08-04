@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     <style>
+
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400&display=swap');
 
         :root {
@@ -18,14 +19,36 @@
             --color-light: #fff;
         }
 
+        /* ================================================================ */
+        /* == ESTILOS PARA MANTENER EL DISEÑO MÓVIL Y CENTRADO EN PC == */
+        /* ================================================================ */
+
         body {
+            /* Le damos un fondo al espacio que sobrará en pantallas grandes */
+            background-color: #364b6e; /* Un color oscuro que combine */
+            display: flex;
+            justify-content: center;
             font-family: var(--font-text);
             margin: 0;
             padding: 0;
             color: var(--color-dark);
             text-align: center;
-            background-color: #e8e8e8;
         }
+
+        .mobile-container {
+            width: 100%;
+            max-width: 430px; /* Ancho máximo similar a un iPhone 13/14 Pro Max. */
+            margin: 0 auto; /* Centra el contenedor horizontalmente */
+            position: relative; /* Clave para que los elementos internos se posicionen correctamente */
+            overflow-x: hidden; /* Evita cualquier desbordamiento horizontal */
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); /* Sombra para darle profundidad */
+            background-color: var(--color-bg, #fdfdfd); /* Fondo por defecto para el contenedor */
+        }
+
+
+        /* ================================== */
+        /* == ESTILOS ORIGINALES AJUSTADOS == */
+        /* ================================== */
 
         .hero h1, .hero p,
         .section h2, .section p,
@@ -34,12 +57,11 @@
         }
 
         #parallax-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
+            position: fixed;   /* fijado al viewport */
+            top: 0; left: 0;
+            width: 100vw;      /* ancho completo de ventana */
+            height: 100vh;     /* alto completo de ventana */
+            z-index: 0;        /* o el valor que necesites para que quede atrás */
             overflow: hidden;
         }
 
@@ -53,6 +75,7 @@
             background-repeat: no-repeat;
             background-size: cover;
             transition: background-position 0.3s;
+            z-index: 0;
         }
 
         #content-wrapper {
@@ -62,12 +85,13 @@
         }
 
         #leaves-container {
-            position: absolute;
+            position: fixed; /* 'fixed' para que cubra toda la pantalla, incluso al hacer scroll */
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none;
+            pointer-events: none; /* Muy importante para poder hacer clic en el contenido de abajo */
+            z-index: 1; /* Un z-index alto para estar por encima del contenido (z-index: 2) pero por debajo del botón de música (z-index: 999) */
         }
 
         @keyframes fall {
@@ -75,7 +99,6 @@
                 transform: translateY(0) rotate(0deg);
                 opacity: 1;
             }
-
             100% {
                 transform: translateY(110vh) rotate(360deg);
                 opacity: 0;
@@ -93,18 +116,19 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* NO USAR justify-content ni padding-top */
         }
 
-        /* ===== INICIO DE CAMBIOS ===== */
+        /* ===== INICIO DE CAMBIOS Y CORRECCIONES ===== */
 
         .hero-box {
             padding: 1.1em 0.7em;
-            max-width: 94vw;
+            max-width: 100%; /* Ajustado de 94vw a 100% */
             margin: 0 auto;
             display: flex;
             flex-direction: column;
             align-items: center;
+            /* CORRECCIÓN: Posicionamos el título de forma estable */
+            padding-top: 20vh !important;
         }
 
         .hero-box h1 {
@@ -122,28 +146,26 @@
             font-size: 1.1em;
         }
 
-
         .arbusto-section {
-            width: 100vw;
+            width: 100%; /* Ajustado de 100vw */
             min-width: 100%;
             aspect-ratio: 4911 / 3099;
-            /* O simplemente 1.585 / 1 */
             background-image: url('/assets/felino.svg');
             background-repeat: no-repeat;
             background-position: center bottom;
             background-size: cover;
             display: block;
             position: relative;
-            margin-top: -55vw;
-            /* Ajustá según solape, probá -8vw, -14vw, etc */
+            /* CORRECCIÓN: Usamos % en lugar de vw para el solapamiento */
+            margin-top: -55% !important; /* Ajusta este valor si es necesario */
             z-index: 10;
             overflow: visible;
             border: none;
             background-color: transparent;
         }
 
-        .arbusto2-section {
-            width: 100vw;
+        .arbusto2-section, .arbusto3-section {
+            width: 100%; /* Ajustado de 100vw */
             min-width: 100%;
             height: 175px;
             background-image: url('/assets/separador.svg');
@@ -153,25 +175,6 @@
             display: block;
             position: relative;
             margin-top: -5vh;
-            /* MODIFICADO: De px a vh para ser adaptable */
-            z-index: 10;
-            overflow: visible;
-            border: none;
-            background-color: transparent;
-        }
-
-        .arbusto3-section {
-            width: 100vw;
-            min-width: 100%;
-            height: 175px;
-            background-image: url('/assets/separador.svg');
-            background-repeat: no-repeat;
-            background-position: center bottom;
-            background-size: cover;
-            display: block;
-            position: relative;
-            margin-top: -5vh;
-            /* MODIFICADO: De px a vh para ser adaptable */
             z-index: 10;
             overflow: visible;
             border: none;
@@ -182,7 +185,7 @@
             padding: 35px 20px;
             margin: 20px 0;
             width: 100%;
-            box-sizing: border-box; /* Previene que el padding altere el ancho total */
+            box-sizing: border-box;
             background: linear-gradient(to bottom,
             rgba(0, 0, 0, 0) 0%,
             rgba(0, 0, 0, 0.1) 30%,
@@ -221,14 +224,12 @@
             margin-top: 18px;
             padding: 0 5vw;
             flex-wrap: wrap;
-            /* AÑADIDO: Permite que los elementos pasen a la siguiente línea si no caben */
         }
 
         #countdown>div {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(7px);
             padding: 13px 5px 8px 5px;
-            /* MODIFICADO: Padding horizontal ajustado */
             border-radius: 16px;
             margin: 0;
             box-shadow: 0 2px 8px rgba(100, 120, 130, 0.09);
@@ -239,7 +240,6 @@
             text-align: center;
             white-space: nowrap;
             overflow: hidden;
-            /* MODIFICADO: Se usa flexbox para un ancho adaptable */
             flex-grow: 1;
             flex-basis: 60px;
             max-width: 80px;
@@ -260,7 +260,7 @@
         }
 
         #music-player {
-            position: fixed;
+            position: absolute; /* Ajustado de 'fixed' a 'absolute' */
             top: 20px;
             right: 20px;
             z-index: 999;
@@ -337,34 +337,29 @@
             display: block;
         }
 
-
-        /* AÑADIDO: Media Query para pantallas pequeñas */
         @media (max-width: 480px) {
             .hero h1 {
                 font-size: 3em;
             }
-
             .hero p {
                 font-size: 1.3em;
             }
-
             #countdown span {
                 font-size: 1.5em;
-                /* Reduce el tamaño de los números del contador */
             }
         }
-
 
         .blur-fade {
             position: absolute;
             left: 0;
             right: 0;
             top: 0;
-            width: 100vw;
-            min-width: 100vw;
+            width: 100%; /* Ajustado de 100vw */
+            min-width: 100%;
             box-sizing: border-box;
             padding: 20px 20px;
-            margin-top: 35vw;
+            /* CORRECCIÓN: margen problemático reseteado */
+            margin-top: 15vh !important;
             box-shadow: 0 4px 18px rgba(80, 90, 100, 0.07);
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
@@ -375,13 +370,13 @@
             text-align: center;
             border-radius: 0;
         }
-
 
         .blur-fade-2 {
             position: relative;
             padding: 20px 20px;
             margin-top: -5vw;
             width: 100%;
+            box-sizing: border-box; /* Añadido para consistencia */
             box-shadow: 0 4px 18px rgba(80, 90, 100, 0.07);
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
@@ -393,17 +388,11 @@
             border-radius: 0;
         }
 
-        /* Resetear márgenes internos para lograr padding visual simétrico */
         .blur-fade h1,
         .blur-fade p {
-            margin: 0.2em 0; /* ajustá este valor para más o menos separación vertical */
+            margin: 0.2em 0;
         }
 
-        /*--------------------------------------------*/
-
-        /* --- INICIO DE ESTILOS PARA CONFIRMACIÓN MÓVIL --- */
-
-        /* Ocultamos los puntos de radio originales */
         .decision-buttons input[type="radio"] {
             position: absolute;
             opacity: 0;
@@ -411,18 +400,16 @@
             height: 0;
         }
 
-        /* Contenedor para los dos botones. Usamos flexbox para que se adapten */
         .decision-buttons {
             display: flex;
-            flex-direction: column; /* Apilados verticalmente en móvil para más claridad */
-            gap: 12px; /* Espacio entre los botones */
+            flex-direction: column;
+            gap: 12px;
             margin-bottom: 30px;
         }
 
-        /* Estilo de cada botón (la etiqueta) */
         .decision-buttons label {
             display: block;
-            padding: 18px 15px; /* Padding generoso para facilitar el toque */
+            padding: 18px 15px;
             border: 2px solid #ddd;
             border-radius: 8px;
             text-align: center;
@@ -431,7 +418,6 @@
             background-color: rgba(255, 255, 255, 0.7);
         }
 
-        /* Estilo para el texto dentro del botón */
         .decision-buttons label span {
             font-size: 1.1em;
             font-weight: 500;
@@ -439,36 +425,30 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px; /* Espacio entre el ícono y el texto */
+            gap: 10px;
         }
 
-        /* Efecto al pasar el mouse (en desktop) o al tocar */
         .decision-buttons label:hover {
             background-color: #f5f5f5;
             border-color: #ccc;
         }
 
-        /* ESTILOS CLAVE: El botón cambia de apariencia cuando está seleccionado */
         .decision-buttons input[type="radio"]:checked + span {
             font-weight: bold;
         }
 
-        /* Estilo del botón "Sí" seleccionado */
         label:has(#asistencia_si:checked) {
             background-color: #e8f5e9;
             border-color: #3a7d44;
             color: #3a7d44;
         }
 
-        /* Estilo del botón "No" seleccionado */
         label:has(#asistencia_no:checked) {
             background-color: #ffebee;
             border-color: #b71c1c;
             color: #b71c1c;
         }
 
-
-        /* Ajustes para la sección de cantidad de asistentes */
         #cantidad-group {
             text-align: center;
             padding: 20px 15px;
@@ -484,22 +464,17 @@
             color: var(--color-dark);
         }
 
-        /* Media Query para pantallas más grandes (opcional, pero recomendado) */
         @media (min-width: 500px) {
             .decision-buttons {
-                flex-direction: row; /* En pantallas más grandes, los ponemos uno al lado del otro */
+                flex-direction: row;
             }
         }
-
-        /* --- galeria --- */
-
-        /* --- INICIO DE ESTILOS PARA EL CARRUSEL (ACTUALIZADO) --- */
 
         .swiper {
             width: 100%;
             max-width: 500px;
             padding-bottom: 50px;
-            position: relative; /* Necesario para posicionar el contenedor de navegación */
+            position: relative;
         }
 
         .swiper-slide {
@@ -519,10 +494,9 @@
             border-radius: 12px;
         }
 
-        /* NUEVO: Contenedor para la navegación inferior */
         .swiper-navigation-container {
             position: absolute;
-            bottom: 10px; /* Distancia desde abajo */
+            bottom: 10px;
             width: 100%;
             display: flex;
             justify-content: center;
@@ -530,20 +504,18 @@
             z-index: 10;
         }
 
-        /* NUEVO: Resetear la posición de los botones y la paginación */
         .swiper-button-next,
         .swiper-button-prev,
         .swiper-pagination {
-            position: static; /* Quitamos el posicionamiento absoluto por defecto */
-            margin: 0 15px; /* Espacio entre los elementos */
+            position: static;
+            margin: 0 15px;
         }
 
         .swiper-button-next::after,
         .swiper-button-prev::after {
-            font-size: 1.5rem; /* Ajustamos el tamaño de las flechas si es necesario */
+            font-size: 1.5rem;
         }
 
-        /* Personalizar los colores */
         .swiper-pagination-bullet-active {
             background-color: var(--color-primary) !important;
         }
@@ -552,9 +524,62 @@
         .swiper-button-prev {
             color: var(--color-primary) !important;
         }
-        /* cambios */
 
+        /* HOJAS */
 
+        /* --- ESTILOS PARA LAS HOJAS (VERSIÓN ACTUALIZADA) --- */
+
+        /* Clase base con los estilos comunes para TODAS las hojas */
+        .leaf {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            top: -30px;
+            z-index: 1;
+            pointer-events: none;
+
+            /* La animación sigue siendo la misma para todas */
+            animation-name: swaying-fall;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+
+        /* Clases específicas para cada diseño de hoja */
+        .leaf-1 {
+            background-image: url('/assets/hoja1.svg');
+        }
+        .leaf-2 {
+            background-image: url('/assets/hoja2.svg');
+        }
+        .leaf-3 {
+            background-image: url('/assets/hoja3.svg');
+        }
+        .leaf-4 {
+            background-image: url('/assets/hoja4.svg');
+        }
+
+        /* La animación @keyframes swaying-fall que creamos antes no necesita cambios. */
+        @keyframes swaying-fall {
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+                opacity: 1;
+            }
+            25% {
+                transform: translateY(25vh) translateX(20px) rotate(90deg);
+            }
+            50% {
+                transform: translateY(50vh) translateX(-20px) rotate(180deg);
+            }
+            75% {
+                transform: translateY(75vh) translateX(20px) rotate(270deg);
+            }
+            100% {
+                transform: translateY(110vh) translateX(0) rotate(360deg);
+                opacity: 0;
+            }
+        }
 
 
 
@@ -562,7 +587,13 @@
 
     </style>
 </head>
+
 <body>
+
+<div class="mobile-container">
+
+
+
 
 <div id="welcome-modal" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(40,60,90,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;">
     <div style="background:#fff;padding:32px 24px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.18);text-align:center;max-width:90vw;">
@@ -574,7 +605,6 @@
 
 <div id="parallax-container">
     <div class="parallax-layer" id="parallax-bg" style="background-image: url('/assets/fondo.svg');"></div>
-    <div id="leaves-container"></div>
 </div>
 
 <div id="content-wrapper">
@@ -716,6 +746,8 @@
     </main>
 </div>
 
+    <div id="leaves-container"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <script>
@@ -776,21 +808,35 @@
         bgLayer.style.backgroundPosition = `center ${percent * 100}%`;
     });
     const leavesContainer = document.getElementById('leaves-container');
+
+
+
     function createLeaf() {
         const leaf = document.createElement('div');
-        leaf.classList.add('leaf');
+
+        // --- INICIO DE LA MODIFICACIÓN ---
+
+        // 1. Definimos cuántos tipos de hojas tenemos.
+        const leafTypes = 4;
+
+        // 2. Generamos un número aleatorio entre 1 y 4.
+        const randomLeafType = Math.floor(Math.random() * leafTypes) + 1;
+
+        // 3. Añadimos la clase base 'leaf' y la clase del diseño aleatorio (ej: 'leaf-3').
+        leaf.classList.add('leaf', `leaf-${randomLeafType}`);
+
+        // --- FIN DE LA MODIFICACIÓN ---
+
         leaf.style.left = `${Math.random() * 100}vw`;
-        leaf.style.animationDuration = `${Math.random() * 5 + 8}s`;
-        leaf.style.animationDelay = `${Math.random() * 5}s`;
+        leaf.style.animationDuration = `${Math.random() * 5 + 8}s`; // Duración aleatoria
+        leaf.style.animationDelay = `${Math.random() * 5}s`; // Retraso aleatorio
+
         leavesContainer.appendChild(leaf);
+
         setTimeout(() => {
             leaf.remove();
-        }, 13000);
+        }, 13000); // 13000ms = 13s, tiempo suficiente para que la animación más larga termine
     }
-
-    setTimeout(() => {
-        setInterval(createLeaf, 700);
-    }, 1000);
 
     /*    Swiper initialization */
 
@@ -839,8 +885,14 @@
     };
 
 
+    // Genera una hoja cada 800 ms
+    setInterval(createLeaf, 800);
+
+
 
 </script>
 
+
+</div>
 </body>
 </html>
