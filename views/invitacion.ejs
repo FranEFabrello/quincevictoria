@@ -223,7 +223,8 @@
             gap: 5px;
             margin-top: 18px;
             padding: 0 5vw;
-            flex-wrap: wrap;
+            flex-wrap: nowrap; /* Evita que los bloques se apilen */
+            overflow-x: auto;  /* Permite scroll horizontal si no entran */
         }
 
         #countdown>div {
@@ -260,7 +261,7 @@
         }
 
         #music-player {
-            position: absolute; /* Ajustado de 'fixed' a 'absolute' */
+            position: fixed; /* Ajustado de 'fixed' a 'absolute' */
             top: 20px;
             right: 20px;
             z-index: 999;
