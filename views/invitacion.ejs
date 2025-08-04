@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns="http://www.w3.org/1999/html">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis 15 Años - Te invito a mi noche mágica</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400&display=swap');
 
@@ -179,8 +180,9 @@
 
         .section {
             padding: 35px 20px;
-            max-width: 800px;
-            margin: 20px auto;
+            margin: 20px 0;
+            width: 100%;
+            box-sizing: border-box; /* Previene que el padding altere el ancho total */
             background: linear-gradient(to bottom,
             rgba(0, 0, 0, 0) 0%,
             rgba(0, 0, 0, 0.1) 30%,
@@ -188,6 +190,12 @@
             backdrop-filter: blur(5px);
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-content {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
         }
 
         .countdown-section {
@@ -348,10 +356,32 @@
 
 
         .blur-fade {
-            position: relative;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            width: 100vw;
+            min-width: 100vw;
+            box-sizing: border-box;
             padding: 20px 20px;
             margin-top: 35vw;
-            width: 100vw;
+            box-shadow: 0 4px 18px rgba(80, 90, 100, 0.07);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            -webkit-mask-image: -webkit-linear-gradient(top, transparent 0%, black 5%, black 95%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+            z-index: 2;
+            text-align: center;
+            border-radius: 0;
+        }
+
+
+        .blur-fade-2 {
+            position: relative;
+            padding: 20px 20px;
+            margin-top: -5vw;
+            width: 100%;
             box-shadow: 0 4px 18px rgba(80, 90, 100, 0.07);
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
@@ -461,7 +491,69 @@
             }
         }
 
-        /* --- FIN DE ESTILOS --- */
+        /* --- galeria --- */
+
+        /* --- INICIO DE ESTILOS PARA EL CARRUSEL (ACTUALIZADO) --- */
+
+        .swiper {
+            width: 100%;
+            max-width: 500px;
+            padding-bottom: 50px;
+            position: relative; /* Necesario para posicionar el contenedor de navegación */
+        }
+
+        .swiper-slide {
+            background-position: center;
+            background-size: cover;
+            width: 300px;
+            height: 450px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            border-radius: 12px;
+        }
+
+        .swiper-slide img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        /* NUEVO: Contenedor para la navegación inferior */
+        .swiper-navigation-container {
+            position: absolute;
+            bottom: 10px; /* Distancia desde abajo */
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        /* NUEVO: Resetear la posición de los botones y la paginación */
+        .swiper-button-next,
+        .swiper-button-prev,
+        .swiper-pagination {
+            position: static; /* Quitamos el posicionamiento absoluto por defecto */
+            margin: 0 15px; /* Espacio entre los elementos */
+        }
+
+        .swiper-button-next::after,
+        .swiper-button-prev::after {
+            font-size: 1.5rem; /* Ajustamos el tamaño de las flechas si es necesario */
+        }
+
+        /* Personalizar los colores */
+        .swiper-pagination-bullet-active {
+            background-color: var(--color-primary) !important;
+        }
+
+        .swiper-button-next,
+        .swiper-button-prev {
+            color: var(--color-primary) !important;
+        }
+        /* cambios */
+
 
 
 
@@ -471,6 +563,14 @@
     </style>
 </head>
 <body>
+
+<div id="welcome-modal" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(40,60,90,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:32px 24px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.18);text-align:center;max-width:90vw;">
+        <h2 style="color:#70A0C8;margin-bottom:0.7em;">¡Hola <%= invitado.nombre %>!</h2>
+        <p>Bienvenido a la invitación de Victoria.<br>¡Te esperamos para celebrar sus 15 años!</p>
+        <button id="welcome-accept" style="margin-top:1.2em;background:#70A0C8;color:#fff;padding:12px 32px;border:none;border-radius:8px;font-size:1.1em;cursor:pointer;">Aceptar</button>
+    </div>
+</div>
 
 <div id="parallax-container">
     <div class="parallax-layer" id="parallax-bg" style="background-image: url('/assets/fondo.svg');"></div>
@@ -509,28 +609,74 @@
             </div>
         </section>
 
+        <div class="arbusto2-section"></div>
+
+        <section class="section blur-fade-2">
+            <div class="section-content">
+                <h2>La Fiesta</h2>
+                <p>Tengo el agrado de invitarte <br> a la celebración de mis quince años.<br>¡Quiero que seas parte
+                    de mi noche soñada!</p>
+                <p><strong>Fecha:</strong> SÁBADO, 29 DE NOVIEMBRE DE 2025</p>
+                <p><strong>Hora:</strong> 22:00 hs</p>
+                <p><strong>Lugar:</strong> Club Citricultores</p>
+            </div>
+        </section>
+
+
         <div class="arbusto2-section" style="transform: scaleX(-1);"></div>
 
-        <section class="section">
-            <h2>La Fiesta</h2>
-            <p>Tengo el agrado de invitarte a la celebración de mis quince años.<br>¡Quiero que seas parte
-                de mi noche soñada!</p>
-            <p><strong>Fecha:</strong> SÁBADO, 22 DE NOVIEMBRE DE 2025</p>
-            <p><strong>Hora:</strong> 21:00 hs</p>
-            <p><strong>Lugar:</strong> Salón "El Paraíso", Av.
-                Siempre Viva 123, Ciudad.</p>
+        <section class="section blur-fade-2">
+            <h2>Un pequeño recuerdo</h2>
+            <div class="swiper">
+                <div class="swiper-wrapper">
+                    <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1613924457768-4c1f46f43d11?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 1"></div>
+                    <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1613789599680-e95673ca7d80?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 2"></div>
+                    <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1527345925176-fbb4fd90033e?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 3"></div>
+                    <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1562346531-6fd51e998566?q=80&w=709&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 4"></div>
+                    <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1542370773-ae6d54f6748d?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 5"></div>
+                    <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1513597607252-a125b383749a?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 6"></div>
+                </div>
+                <div class="swiper-navigation-container">
+                    <div class="swiper-button-prev"></div>
+                    <div class="swiper-pagination"></div>
+                    <div class="swiper-button-next"></div>
+                </div>
+            </div>
         </section>
 
         <div class="arbusto2-section"></div>
 
-        <section class="section">
+        <section class="section blur-fade-2">
             <h2>Regalos</h2>
-            <p>El mejor regalo es que me acompañes en esta noche única.<br>Si aún así deseas obsequiarme algo, puedes hacerlo en el buzón que encontraré en la fiesta.</p>
+            <p>Tu presencia es el mejor regalo que puedo recibir.<br>Si deseas hacerme un obsequio, habrá un buzón disponible en la fiesta.</p>
+        </section>
+
+
+        <div class="arbusto3-section" style="transform: scaleX(-1);"></div>
+
+        <!-- Dress Code, después de "La Fiesta" -->
+        <section class="section blur-fade-2">
+            <div class="section-content">
+                <h2>Dress Code</h2>
+                <p>Vestimenta sugerida: <strong>Elegante</strong>.<br>¡Sentite libre de brillar y disfrutar la noche!</p>
+            </div>
         </section>
 
         <div class="arbusto3-section"></div>
 
-        <section class="section">
+        <section class="section blur-fade-2">
+            <div class="section-content">
+                <h2>Ubicación</h2>
+                <p><strong>Club Citricultores</strong></p>
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3445.183410153992!2d-57.67156042473693!3d-30.28883984265238!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95ad2847b19e059b%3A0xb3af2f0a44da8b29!2sClub%20Citricultores!5e0!3m2!1ses!2sar!4v1754266494672!5m2!1ses!2sar"
+                        width="100%" height="320" style="border:0; border-radius:12px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+        </section>
+
+        <div class="arbusto3-section"style="transform: scaleX(-1);"></div>
+
+
+        <section class="section blur-fade-2">
             <h2>Confirmar Asistencia</h2>
             <div class="card">
                 <h3>¡Hola, <%= invitado.nombre %> <%= invitado.apellido %>!</h3>
@@ -563,13 +709,18 @@
                 </form>
             </div>
         </section>
+
+
+        <div class="arbusto2-section"></div>
+
     </main>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <script>
     const countdown = () => {
-        const targetDate = new Date('November 29, 2025 21:00:00').getTime();
+        const targetDate = new Date('November 29, 2025 22:00:00').getTime();
         const now = new Date().getTime();
         const gap = targetDate - now;
         const second = 1000, minute = second * 60, hour = minute * 60, day = hour * 24;
@@ -641,6 +792,51 @@
         setInterval(createLeaf, 700);
     }, 1000);
 
+    /*    Swiper initialization */
+
+    // ===== INICIALIZACIÓN DE SWIPER.JS (ACTUALIZADO) =====
+    const swiper = new Swiper('.swiper', {
+        effect: 'coverflow',
+        grabCursor: true,
+        centeredSlides: true,
+        slidesPerView: 'auto',
+        coverflowEffect: {
+            rotate: 50,
+            stretch: 0,
+            depth: 100,
+            modifier: 1,
+            slideShadows: true,
+        },
+
+        loop: true,
+
+        // AÑADIDO: Deslizamiento automático cada 5 segundos
+        autoplay: {
+            delay: 5000,
+            disableOnInteraction: false, // El autoplay no se detiene si el usuario interactúa
+        },
+
+        pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+        },
+
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+        },
+    });
+
+
+    // JS para el modal y la música
+    document.getElementById('welcome-accept').onclick = function() {
+        document.getElementById('welcome-modal').style.display = 'none';
+        const music = document.getElementById('background-music');
+        const musicIcon = document.getElementById('music-toggle').querySelector('i');
+        music.play().then(() => {
+            musicIcon.className = 'fas fa-pause';
+        }).catch(() => {});
+    };
 
 
 
