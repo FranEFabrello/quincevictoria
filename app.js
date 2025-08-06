@@ -10,7 +10,7 @@ const app = express();
 const upload = multer({ dest: "uploads/" });
 const db = new sqlite3.Database("database.db");
 
-const CLAVE_CORRECTA = "1234";
+const CLAVE_CORRECTA = "Victoria2025**";
 
 app.use(session({
     secret: "clave-super-secreta",
