@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Invitado</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; background-color: #f4f7f9; }
+        .container { max-width: 600px; margin: 20px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        h1 { color: #007bff; text-align: center; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px;}
+        button[type="submit"] { background-color: #28a745; color: white; width: 100%; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .cancel-link { display: block; text-align: center; margin-top: 15px; color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Editar Invitado</h1>
+    <form action="/admin/invitado/actualizar/<%= invitado.id %>" method="POST">
+        <div class="form-group">
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" name="nombre" value="<%= invitado.nombre %>" required>
+        </div>
+        <div class="form-group">
+            <label for="apellido">Apellido</label>
+            <input type="text" id="apellido" name="apellido" value="<%= invitado.apellido %>">
+        </div>
+        <div class="form-group">
+            <label for="cantidad">Invitados (Total)</label>
+            <input type="number" id="cantidad" name="cantidad" value="<%= invitado.cantidad %>" required min="0">
+        </div>
+        <div class="form-group">
+            <label for="confirmados">Asistirán</label>
+            <input type="number" id="confirmados" name="confirmados" value="<%= invitado.confirmados %>" required min="0">
+        </div>
+        <div class="form-group">
+            <label for="estado">Estado</label>
+            <select id="estado" name="estado">
+                <option value="pendiente" <%= invitado.estado === 'pendiente' ? 'selected' : '' %>>Pendiente</option>
+                <option value="confirmado" <%= invitado.estado === 'confirmado' ? 'selected' : '' %>>Confirmado</option>
+                <option value="rechazado" <%= invitado.estado === 'rechazado' ? 'selected' : '' %>>Rechazado</option>
+            </select>
+        </div>
+        <button type="submit">Guardar Cambios</button>
+    </form>
+    <a href="/admin/invitados" class="cancel-link">Cancelar y volver al listado</a>
+</div>
+</body>
+</html>

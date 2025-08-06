@@ -746,8 +746,7 @@
         <section class="section blur-fade-2">
             <h2>Confirmar Asistencia</h2>
             <div class="card">
-                <h3>¡Hola, <%= invitado.nombre %> <%= invitado.apellido %>!</h3>
-                <p>Tu invitación es válida para <strong><%= invitado.cantidad %> persona(s)</strong>.</p>
+                <h3>¡Hola, <%= invitado.nombre %><% if (invitado.apellido) { %> <%= invitado.apellido %><% } %>!</h3>                <p>Tu invitación es válida para <strong><%= invitado.cantidad %> persona(s)</strong>.</p>
                 <p>Por favor, confirma tu asistencia antes del 10 de Noviembre.</p>
 
                 <form action="/confirmar/<%= invitado.id %>" method="POST">

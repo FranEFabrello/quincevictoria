@@ -31,8 +31,9 @@ app.use("/admin", checkAdmin, express.static("public"));
 
 function checkAdmin(req, res, next) {
     if (req.session && req.session.adminAutenticado) return next();
-    if (req.path !== "/admin-login") return res.redirect("/admin-login");
-    next();
+    // Permite el acceso a la página de login sin estar autenticado
+    if (req.path === "/admin-login" || req.path === "/admin-login/") return next();
+    res.redirect("/admin-login");
 }
 
 db.serialize(() => {
@@ -63,8 +64,9 @@ function existeId(id) {
     });
 }
 
+// RUTA PRINCIPAL MODIFICADA
 app.get("/", (req, res) => {
-    res.send("<h2>Bienvenido</h2><p>Este sitio es solo para confirmar asistencia.</p><p><a href='/admin'>Ir al panel</a></p>");
+    res.render("home");
 });
 
 app.get("/estado", (req, res) => {
@@ -127,56 +129,108 @@ app.post("/upload", upload.single("excel"), async (req, res) => {
     res.redirect("/admin");
 });
 
+// RUTA DE CONFIRMACIÓN MODIFICADA (Esta es la sección a reemplazar)
 app.get("/confirmar/:id", (req, res) => {
     const id = req.params.id;
     db.get("SELECT * FROM invitados WHERE id = ?", [id], (err, row) => {
-        if (err || !row) return res.send("Invitado no encontrado.");
-        if (row.estado !== "pendiente") return res.send("Ya respondiste a la invitación. ¡Gracias!");
-        // Cambio realizado para renderizar la nueva vista
+        if (err || !row) {
+            // Si hay un error o no se encuentra el invitado, mostramos un mensaje.
+            return res.status(404).render("mensaje", {
+                titulo: "Error",
+                tituloH1: "Invitación no encontrada",
+                mensaje: "El enlace que utilizaste no parece ser válido. Por favor, verifica el link o contacta a los organizadores."
+            });
+        }
+
+        // --- ¡AQUÍ ESTÁ LA LÓGICA CLAVE! ---
+        // Verificamos si el estado ya no es "pendiente".
+        if (row.estado !== "pendiente") {
+            // Si la invitación ya fue respondida, renderizamos la página de mensaje.
+            return res.render("mensaje", {
+                titulo: "Invitación ya Respondida",
+                tituloH1: "¡Gracias por tu respuesta!",
+                mensaje: "Ya hemos registrado tu respuesta para esta invitación. Si necesitas hacer algún cambio, por favor contacta a los organizadores."
+            });
+        }
+
+        // Si todo está bien y sigue pendiente, mostramos la invitación normal.
         res.render("invitacion", { invitado: row });
     });
 });
 
+
+// RUTA POST (ya está correcta, la incluyo para dar contexto)
 app.post("/confirmar/:id", (req, res) => {
     const id = req.params.id;
     const { decision, confirmados } = req.body;
     if (!["confirmado", "rechazado"].includes(decision)) return res.send("Decisión inválida.");
-    const confirmadosInt = parseInt(confirmados || 0);
+
+    const confirmadosInt = decision === 'rechazado' ? 0 : parseInt(confirmados || 0);
+
     db.run("UPDATE invitados SET estado = ?, confirmados = ? WHERE id = ?", [decision, confirmadosInt, id], err => {
         if (err) return res.send("Error al guardar respuesta.");
         res.redirect("/gracias");
     });
 });
 
+// RUTA DE "GRACIAS"
 app.get("/gracias", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "gracias.html"));
-});
-
-
-app.get("/admin/invitados", checkAdmin, (req, res) => {
-    db.all("SELECT nombre, apellido, cantidad, confirmados, estado FROM invitados", [], (err, rows) => {
-        if (err) return res.status(500).send("Error al leer invitados");
-        let html = `<html><head><title>Lista</title>
-        <style>
-        body { font-family:sans-serif; padding:20px; }
-        table { width:100%; border-collapse:collapse; }
-        th, td { padding:8px; border:1px solid #ccc; }
-        th { background:#007bff; color:white; }
-        tr:nth-child(even) { background:#f2f2f2; }
-        .logout-btn { margin-top:30px; background:#dc3545; color:white; border:none; padding:10px 20px; font-size:16px; border-radius:4px; cursor:pointer; }
-        </style></head><body><h1>Invitados</h1><table>
-        <tr><th>Nombre</th><th>Apellido</th><th>Total</th><th>Confirmados</th><th>Estado</th></tr>`;
-        for (const r of rows) {
-            html += `<tr><td>${r.nombre}</td><td>${r.apellido}</td><td>${r.cantidad}</td><td>${r.confirmados}</td><td>${r.estado}</td></tr>`;
-        }
-        html += `</table>
-        <form action="/admin-logout" method="get">
-            <button class="logout-btn">Cerrar sesión</button>
-        </form>
-        </body></html>`;
-        res.send(html);
+    res.render("mensaje", {
+        titulo: "Confirmación Enviada",
+        tituloH1: "¡Respuesta Enviada!",
+        mensaje: "Muchas gracias por tu confirmación. ¡Te esperamos para celebrar!"
     });
 });
+
+// --- PANEL DE ADMINISTRACIÓN MEJORADO ---
+
+// RUTA DEL LISTADO DE INVITADOS MODIFICADA
+app.get("/admin/invitados", checkAdmin, (req, res) => {
+    db.all("SELECT * FROM invitados ORDER BY nombre", [], (err, rows) => {
+        if (err) return res.status(500).send("Error al leer invitados");
+
+        let totalInvitados = 0;
+        let confirmados = 0;
+        rows.forEach(r => {
+            totalInvitados += r.cantidad;
+            confirmados += r.confirmados;
+        });
+        const pendientes = rows.filter(r => r.estado === 'pendiente').length;
+        const rechazados = rows.filter(r => r.estado === 'rechazado').length;
+
+        res.render("admin_invitados", {
+            invitados: rows,
+            totalInvitados,
+            confirmados,
+            pendientes,
+            rechazados
+        });
+    });
+});
+
+// NUEVA RUTA: Mostrar el formulario de edición
+app.get("/admin/invitado/editar/:id", checkAdmin, (req, res) => {
+    const id = req.params.id;
+    db.get("SELECT * FROM invitados WHERE id = ?", [id], (err, row) => {
+        if (err || !row) return res.status(404).send("Invitado no encontrado.");
+        res.render("admin_editar_invitado", { invitado: row });
+    });
+});
+
+// NUEVA RUTA: Procesar la actualización del invitado
+app.post("/admin/invitado/actualizar/:id", checkAdmin, (req, res) => {
+    const id = req.params.id;
+    const { nombre, apellido, cantidad, confirmados, estado } = req.body;
+    db.run(
+        `UPDATE invitados SET nombre = ?, apellido = ?, cantidad = ?, confirmados = ?, estado = ? WHERE id = ?`,
+        [nombre, apellido, cantidad, confirmados, estado, id],
+        (err) => {
+            if (err) return res.status(500).send("Error al actualizar el invitado.");
+            res.redirect("/admin/invitados");
+        }
+    );
+});
+
 
 app.get("/admin/borrar-todo", checkAdmin, (req, res) => {
     db.run("DELETE FROM invitados", [], err => {
@@ -185,23 +239,54 @@ app.get("/admin/borrar-todo", checkAdmin, (req, res) => {
     });
 });
 
+// RUTA PARA DESCARGAR LINKS (MODIFICADA PARA GENERAR EXCEL)
 app.get("/admin/descargar-links", checkAdmin, (req, res) => {
-    db.all("SELECT id, nombre, apellido FROM invitados", [], (err, rows) => {
-        if (err) return res.status(500).send("Error al generar links.");
-        const contenido = rows.map(r => `${r.nombre} ${r.apellido}: http://localhost:3000/confirmar/${r.id}`).join("\n");
-        res.setHeader("Content-disposition", "attachment; filename=links.txt");
-        res.setHeader("Content-Type", "text/plain");
-        res.send(contenido);
+    db.all("SELECT id, nombre, apellido FROM invitados ORDER BY nombre", [], (err, rows) => {
+        if (err) {
+            return res.status(500).send("Error al generar los links.");
+        }
+
+        // 1. Preparamos los datos para el Excel
+        const datosParaExcel = rows.map(invitado => {
+            return {
+                Nombre: invitado.nombre,
+                Apellido: invitado.apellido || '', // Aseguramos que no sea null
+                Link: `https://quincevictoria.onrender.com/confirmar/${invitado.id}`
+            };
+        });
+
+        // 2. Creamos una nueva hoja de cálculo a partir de los datos
+        const hojaDeCalculo = XLSX.utils.json_to_sheet(datosParaExcel);
+
+        // Opcional: Ajustar el ancho de las columnas
+        hojaDeCalculo['!cols'] = [
+            { wch: 25 }, // Ancho columna Nombre
+            { wch: 25 }, // Ancho columna Apellido
+            { wch: 60 }  // Ancho columna Link
+        ];
+
+        // 3. Creamos un nuevo libro de trabajo y añadimos la hoja
+        const libroDeTrabajo = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeCalculo, "Links de Invitados");
+
+        // 4. Escribimos el libro en un buffer para enviarlo como respuesta
+        const buffer = XLSX.write(libroDeTrabajo, { type: "buffer", bookType: "xlsx" });
+
+        // 5. Configuramos las cabeceras y enviamos el archivo
+        res.setHeader("Content-Disposition", "attachment; filename=links_invitados.xlsx");
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.send(buffer);
     });
 });
 
 app.get("/admin/descargar-confirmaciones", checkAdmin, (req, res) => {
+    const header = "Nombre,Apellido,Estado,Confirmados\n";
     db.all("SELECT nombre, apellido, estado, confirmados FROM invitados", [], (err, rows) => {
         if (err) return res.status(500).send("Error al generar archivo.");
-        const contenido = rows.map(r => `${r.nombre},${r.apellido},${r.estado},${r.confirmados}`).join("\n");
+        const contenido = rows.map(r => `${r.nombre},${r.apellido || ''},${r.estado},${r.confirmados}`).join("\n");
         res.setHeader("Content-disposition", "attachment; filename=confirmaciones.csv");
         res.setHeader("Content-Type", "text/csv");
-        res.send(contenido);
+        res.send(header + contenido);
     });
 });
 
