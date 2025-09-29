@@ -10,7 +10,23 @@ const compression = require("compression");
 
 const app = express();
 const upload = multer({ dest: "uploads/" });
-const db = new sqlite3.Database("database.db");
+const db = new sqlite3.Database("database.db", (err) => {
+    if (err) {
+        console.error("Error al abrir la base de datos:", err);
+    }
+});
+
+db.exec("PRAGMA journal_mode=WAL;", (err) => {
+    if (err) {
+        console.error("No se pudo habilitar el modo WAL:", err);
+    }
+});
+
+try {
+    db.configure("busyTimeout", 5000);
+} catch (error) {
+    console.error("No se pudo configurar el busyTimeout de la base de datos:", error);
+}
 const isProduction = process.env.NODE_ENV === "production";
 
 const CLAVE_CORRECTA = "Victoria2025**";
