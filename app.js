@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const fsp = fs.promises;
 const XLSX = require("xlsx");
 const sqlite3 = require("sqlite3").verbose();
 const session = require("express-session");
@@ -121,6 +122,29 @@ app.get("/estado", (req, res) => {
 
 app.get("/admin", checkAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+app.get("/admin/backup", checkAdmin, async (req, res) => {
+    try {
+        await fsp.mkdir(path.join(__dirname, "backups"), { recursive: true });
+
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}${String(now.getSeconds()).padStart(2, "0")}`;
+        const backupFileName = `backup-${timestamp}.db`;
+        const sourcePath = path.join(__dirname, "database.db");
+        const backupPath = path.join(__dirname, "backups", backupFileName);
+
+        await fsp.copyFile(sourcePath, backupPath);
+
+        res.download(backupPath, backupFileName, (err) => {
+            if (err && !res.headersSent) {
+                res.status(500).json({ ok: false, error: "No se pudo descargar el respaldo." });
+            }
+        });
+    } catch (error) {
+        console.error("Error al generar el respaldo:", error);
+        res.status(500).json({ ok: false, error: "No se pudo generar el respaldo." });
+    }
 });
 
 app.get("/admin-login", (req, res) => {
