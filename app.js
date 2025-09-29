@@ -204,14 +204,23 @@ app.get("/confirmar/:id", (req, res) => {
 // RUTA POST (ya está correcta, la incluyo para dar contexto)
 app.post("/confirmar/:id", (req, res) => {
     const id = req.params.id;
-    const { decision, confirmados } = req.body;
-    if (!["confirmado", "rechazado"].includes(decision)) return res.send("Decisión inválida.");
+    const { decision } = req.body;
+    let { confirmados } = req.body;
+    if (!["confirmado", "rechazado"].includes(decision)) return res.status(400).send("Decisión inválida.");
 
-    const confirmadosInt = decision === 'rechazado' ? 0 : parseInt(confirmados || 0);
-
-    db.run("UPDATE invitados SET estado = ?, confirmados = ? WHERE id = ?", [decision, confirmadosInt, id], err => {
-        if (err) return res.send("Error al guardar respuesta.");
-        res.redirect("/gracias");
+    db.get("SELECT cantidad FROM invitados WHERE id = ?", [id], (err, row) => {
+        if (err || !row) return res.status(404).send("Invitación no encontrada.");
+        const max = parseInt(row.cantidad || 0);
+        let confirmadosInt = 0;
+        if (decision === 'confirmado') {
+            confirmadosInt = parseInt(confirmados, 10);
+            if (isNaN(confirmadosInt) || confirmadosInt < 1) confirmadosInt = 1; // mínimo 1 si confirma
+            if (confirmadosInt > max) confirmadosInt = max; // clamp
+        }
+        db.run("UPDATE invitados SET estado = ?, confirmados = ? WHERE id = ?", [decision, confirmadosInt, id], err2 => {
+            if (err2) return res.status(500).send("Error al guardar respuesta.");
+            res.redirect("/gracias");
+        });
     });
 });
 
