@@ -1,2 +1,65 @@
-</div> </div> </body>
+<script>
+    (function() {
+        const lazyBackgrounds = document.querySelectorAll('[data-bg]');
+        if (!lazyBackgrounds.length) return;
+
+        const loadBackground = (element) => {
+            if (!element || !element.dataset.bg) return;
+            const src = element.dataset.bg;
+            const apply = () => {
+                element.style.setProperty('--lazy-bg', `url('${src}')`);
+                element.classList.add('bg-loaded');
+                element.classList.remove('lazy-bg');
+                element.removeAttribute('data-bg');
+            };
+            const image = new Image();
+            image.addEventListener('load', apply, { once: true });
+            image.addEventListener('error', () => {
+                element.classList.add('bg-loaded');
+                element.classList.remove('lazy-bg');
+                element.removeAttribute('data-bg');
+            }, { once: true });
+            image.src = src;
+        };
+
+        const runLazyLoading = () => {
+            const eager = Array.from(lazyBackgrounds).filter(el => el.dataset.bgPriority === 'eager');
+            eager.forEach(loadBackground);
+
+            const remaining = Array.from(lazyBackgrounds).filter(el => !el.dataset.bgPriority);
+            if (!remaining.length) return;
+
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            loadBackground(entry.target);
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, { rootMargin: '200px 0px' });
+                remaining.forEach(el => observer.observe(el));
+            } else {
+                remaining.forEach(loadBackground);
+            }
+        };
+
+        const schedule = () => {
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(runLazyLoading, { timeout: 1000 });
+            } else {
+                setTimeout(runLazyLoading, 100);
+            }
+        };
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            schedule();
+        } else {
+            document.addEventListener('DOMContentLoaded', schedule, { once: true });
+        }
+    })();
+</script>
+</div>
+</div>
+</body>
 </html>
