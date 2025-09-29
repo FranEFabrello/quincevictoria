@@ -910,6 +910,40 @@ welcomeBtn.onclick = function() {
   const musicIcon = document.getElementById('music-toggle').querySelector('i');
   music.play().then(() => { musicIcon.className = 'fas fa-pause'; }).catch(() => {});
 };
+
+// ================= CUENTA REGRESIVA =================
+(function(){
+  const targetTime = new Date('2025-11-29T22:00:00-03:00').getTime(); // Ajustar zona horaria si cambia
+  const dEl = document.getElementById('days');
+  const hEl = document.getElementById('hours');
+  const mEl = document.getElementById('minutes');
+  const sEl = document.getElementById('seconds');
+  if(!dEl||!hEl||!mEl||!sEl) return;
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function tick(){
+    const now = Date.now();
+    let diff = targetTime - now;
+    if (diff <= 0) {
+      dEl.textContent = hEl.textContent = mEl.textContent = sEl.textContent = '00';
+      return; // Evento pasado
+    }
+    const sec = 1000, min = sec*60, hr = min*60, day = hr*24;
+    const days = Math.floor(diff/day);
+    diff -= days*day;
+    const hours = Math.floor(diff/hr);
+    diff -= hours*hr;
+    const minutes = Math.floor(diff/min);
+    diff -= minutes*min;
+    const seconds = Math.floor(diff/sec);
+    dEl.textContent = pad(days);
+    hEl.textContent = pad(hours);
+    mEl.textContent = pad(minutes);
+    sEl.textContent = pad(seconds);
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+// ================= FIN CUENTA REGRESIVA =================
 </script>
 
 
