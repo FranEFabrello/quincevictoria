@@ -217,10 +217,28 @@ app.post("/confirmar/:id", (req, res) => {
             if (isNaN(confirmadosInt) || confirmadosInt < 1) confirmadosInt = 1; // mínimo 1 si confirma
             if (confirmadosInt > max) confirmadosInt = max; // clamp
         }
-        db.run("UPDATE invitados SET estado = ?, confirmados = ? WHERE id = ?", [decision, confirmadosInt, id], err2 => {
-            if (err2) return res.status(500).send("Error al guardar respuesta.");
-            res.redirect("/gracias");
-        });
+        db.run(
+            "UPDATE invitados SET estado = ?, confirmados = ? WHERE id = ? AND estado = 'pendiente'",
+            [decision, confirmadosInt, id],
+            function (err2) {
+                if (err2) return res.status(500).send("Error al guardar respuesta.");
+
+                if (this.changes === 0) {
+                    if (req.accepts("html")) {
+                        return res
+                            .status(409)
+                            .render("mensaje", {
+                                titulo: "Invitación ya respondida",
+                                tituloH1: "¡Ya tenemos tu respuesta!",
+                                mensaje: "Parece que esta invitación ya fue respondida anteriormente. Si necesitás realizar un cambio, por favor contactá a los organizadores."
+                            });
+                    }
+                    return res.status(409).send("La invitación ya fue respondida anteriormente.");
+                }
+
+                res.redirect("/gracias");
+            }
+        );
     });
 });
 
