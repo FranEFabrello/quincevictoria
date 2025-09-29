@@ -189,26 +189,93 @@ app.get("/admin-logout", (req, res) => {
     req.session.destroy(() => res.redirect("/"));
 });
 
+function runAsync(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.run(sql, params, function (err) {
+            if (err) {
+                return reject(err);
+            }
+            resolve(this);
+        });
+    });
+}
+
+function execAsync(sql) {
+    return new Promise((resolve, reject) => {
+        db.exec(sql, (err) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve();
+        });
+    });
+}
+
 app.post("/upload", upload.single("excel"), async (req, res) => {
-    const workbook = XLSX.readFile(req.file.path);
-    const hoja = workbook.Sheets[workbook.SheetNames[0]];
-    const datos = XLSX.utils.sheet_to_json(hoja);
-
-    for (const fila of datos) {
-        const idBase = normalizarTexto((fila.Nombre || "") + "-" + (fila.Apellido || ""));
-        let id = idBase;
-        let contador = 1;
-        while (await existeId(id)) {
-            id = idBase + "-" + contador++;
-        }
-
-        db.run("INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES (?, ?, ?, ?, ?, ?)", [
-            id, fila.Nombre, fila.Apellido, fila.Cantidad, "pendiente", 0
-        ]);
+    const filePath = req.file && req.file.path;
+    if (!filePath) {
+        return res.status(400).render("mensaje", {
+            titulo: "Error al cargar archivo",
+            tituloH1: "Archivo no encontrado",
+            mensaje: "No se recibió ningún archivo para procesar. Intentá nuevamente."
+        });
     }
 
-    fs.unlinkSync(req.file.path);
-    res.redirect("/admin");
+    let transactionActiva = false;
+
+    try {
+        const workbook = XLSX.readFile(filePath);
+        const hoja = workbook.Sheets[workbook.SheetNames[0]];
+        const datos = XLSX.utils.sheet_to_json(hoja);
+
+        await execAsync("BEGIN TRANSACTION;");
+        transactionActiva = true;
+
+        for (const fila of datos) {
+            const idBase = normalizarTexto((fila.Nombre || "") + "-" + (fila.Apellido || ""));
+            let id = idBase;
+            let contador = 1;
+            while (await existeId(id)) {
+                id = idBase + "-" + contador++;
+            }
+
+            await runAsync(
+                "INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES (?, ?, ?, ?, ?, ?)",
+                [
+                    id,
+                    fila.Nombre,
+                    fila.Apellido,
+                    fila.Cantidad,
+                    "pendiente",
+                    0
+                ]
+            );
+        }
+
+        await execAsync("COMMIT;");
+        transactionActiva = false;
+
+        await fsp.unlink(filePath).catch(() => {});
+        res.redirect("/admin");
+    } catch (error) {
+        console.error("Error al procesar la importación:", error);
+
+        if (transactionActiva) {
+            try {
+                await execAsync("ROLLBACK;");
+            } catch (rollbackError) {
+                console.error("Error al hacer ROLLBACK:", rollbackError);
+            }
+        }
+
+        await fsp.unlink(filePath).catch(() => {});
+
+        return res.status(500).render("mensaje", {
+            titulo: "Error al importar invitados",
+            tituloH1: "No se pudo procesar el archivo",
+            mensaje: "Ocurrió un problema al cargar el archivo. Verificá que no existan invitados duplicados y volvé a intentarlo."
+        });
+    }
 });
 
 // RUTA DE CONFIRMACIÓN MODIFICADA (Esta es la sección a reemplazar)
