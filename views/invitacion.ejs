@@ -579,7 +579,6 @@
             background-size: contain;
             background-repeat: no-repeat;
             top: -30px;
-            z-index: 1;
             pointer-events: none;
 
             /* La animación sigue siendo la misma para todas */
@@ -644,6 +643,13 @@
         #welcome-accept.loading { cursor: not-allowed; opacity: .6; }
         #welcome-accept .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,.45); border-top-color:#fff; border-radius:50%; animation:spin .75s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        /* === HOJAS (restaurado) === */
+        .leaf { position:absolute; width:25px; height:25px; background-size:contain; background-repeat:no-repeat; top:-30px; pointer-events:none; animation-name:swaying-fall; animation-timing-function:linear; animation-iteration-count:infinite; }
+        .leaf-1 { background-image:url('/assets/hoja1.svg'); }
+        .leaf-2 { background-image:url('/assets/hoja2.svg'); }
+        .leaf-3 { background-image:url('/assets/hoja3.svg'); }
+        .leaf-4 { background-image:url('/assets/hoja4.svg'); }
+        @keyframes swaying-fall { 0%{transform:translateY(0) translateX(0) rotate(0deg);opacity:1;}25%{transform:translateY(25vh) translateX(20px) rotate(90deg);}50%{transform:translateY(50vh) translateX(-20px) rotate(180deg);}75%{transform:translateY(75vh) translateX(20px) rotate(270deg);}100%{transform:translateY(110vh) translateX(0) rotate(360deg);opacity:0;} }
     </style>
 </head>
 
@@ -895,6 +901,9 @@
     const lbl = BTN.querySelector('.label-text');
     if (lbl) lbl.textContent = timeoutFallback && loaded < total ? 'Entrar (carga parcial)' : 'Aceptar';
     if (PROG_TEXT && timeoutFallback && loaded < total) PROG_TEXT.textContent += ' • Timeout';
+
+    // Intenta inicializar el carrusel una vez que dejamos entrar
+    if (typeof initSwiper === 'function') initSwiper();
   }
 
   preloadAll();
@@ -944,10 +953,75 @@ welcomeBtn.onclick = function() {
   setInterval(tick, 1000);
 })();
 // ================= FIN CUENTA REGRESIVA =================
+
+// ================= SWIPER INIT (RESTAURADO) =================
+function initSwiper(){
+  if (window._swiperInit) return;
+  if (typeof Swiper === 'undefined') return; // aún no cargó script
+  const el = document.querySelector('.swiper');
+  if (!el) return;
+  window._swiperInit = true;
+  new Swiper('.swiper', {
+    effect: 'coverflow',
+    grabCursor: true,
+    centeredSlides: true,
+    slidesPerView: 'auto',
+    coverflowEffect: { rotate: 50, stretch: 0, depth: 100, modifier: 1, slideShadows: true },
+    loop: true,
+    autoplay: { delay: 5000, disableOnInteraction: false },
+    pagination: { el: '.swiper-pagination', clickable: true },
+    navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSwiper);
+} else {
+  initSwiper();
+}
+// ================= FIN SWIPER INIT =================
+
+// ================= HOJAS ANIMADAS (RESTAURADO) =================
+function initLeavesAnimation(){
+  if (window._leavesInit) return; window._leavesInit = true;
+  const container = document.getElementById('leaves-container');
+  if (!container) return;
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const maxLeaves = prefersReduced ? 8 : (window.matchMedia('(max-width:768px)').matches ? 16 : 26);
+  const leafTypes = 4;
+  let active = 0;
+  function removeLater(el){ setTimeout(()=>{ el.remove(); active = Math.max(active-1,0); }, 13000); }
+  function createLeaf(){
+    const el = document.createElement('div');
+    const t = Math.floor(Math.random()*leafTypes)+1;
+    el.className = `leaf leaf-${t}`;
+    el.style.left = (Math.random()*100)+'vw';
+    el.style.animationDuration = (Math.random()*5+8)+'s';
+    el.style.animationDelay = (Math.random()*5)+'s';
+    return el;
+  }
+  function spawn(){
+    if (document.hidden) return;
+    if (active >= maxLeaves) return;
+    const l = createLeaf();
+    container.appendChild(l); active++; removeLater(l);
+  }
+  const interval = prefersReduced ? 2400 : 1200;
+  if (!prefersReduced){
+    setInterval(spawn, interval);
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) spawn(); });
+  }
+  // seed
+  for(let i=0;i<Math.min(6,maxLeaves);i++) spawn();
+}
+// ================= FIN HOJAS ANIMADAS =================
+
+// Hook en el botón de aceptación para iniciar hojas (si no se iniciaron antes)
+welcomeBtn.addEventListener('click', ()=>{ if(!welcomeBtn.disabled) initLeavesAnimation(); });
+// Por si el usuario ya estaba dentro (sin modal) iniciamos al cargar
+if (!document.getElementById('welcome-modal')) initLeavesAnimation();
 </script>
 
 
 </div>
 </body>
 </html>
-
