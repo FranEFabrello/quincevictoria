@@ -283,7 +283,6 @@ app.get("/confirmar/:id", (req, res) => {
     const id = req.params.id;
     db.get("SELECT * FROM invitados WHERE id = ?", [id], (err, row) => {
         if (err || !row) {
-            // Si hay un error o no se encuentra el invitado, mostramos un mensaje.
             return res.status(404).render("mensaje", {
                 titulo: "Error",
                 tituloH1: "Invitación no encontrada",
@@ -291,19 +290,28 @@ app.get("/confirmar/:id", (req, res) => {
             });
         }
 
-        // --- ¡AQUÍ ESTÁ LA LÓGICA CLAVE! ---
-        // Verificamos si el estado ya no es "pendiente".
-        if (row.estado !== "pendiente") {
-            // Si la invitación ya fue respondida, renderizamos la página de mensaje.
-            return res.render("mensaje", {
-                titulo: "Invitación ya Respondida",
-                tituloH1: "¡Gracias por tu respuesta!",
-                mensaje: "Ya hemos registrado tu respuesta para esta invitación. Si necesitas hacer algún cambio, por favor contacta a los organizadores."
-            });
+        const bloquearFormulario = row.estado !== "pendiente";
+        let alerta = null;
+
+        if (req.query.exito === "1") {
+            let mensajeExito;
+            if (row.estado === "confirmado") {
+                const cantidadConfirmada = row.confirmados || 0;
+                mensajeExito = `¡Gracias! Registramos que asistirán ${cantidadConfirmada} persona(s).`;
+            } else if (row.estado === "rechazado") {
+                mensajeExito = "Registramos que no podrán acompañarnos. ¡Gracias por avisarnos!";
+            } else {
+                mensajeExito = "¡Gracias! Registramos tu respuesta.";
+            }
+
+            alerta = { tipo: "exito", mensaje: mensajeExito };
         }
 
-        // Si todo está bien y sigue pendiente, mostramos la invitación normal.
-        res.render("invitacion", { invitado: row });
+        res.render("invitacion", {
+            invitado: row,
+            bloquearFormulario,
+            alerta
+        });
     });
 });
 
@@ -313,37 +321,50 @@ app.post("/confirmar/:id", (req, res) => {
     const id = req.params.id;
     const { decision } = req.body;
     let { confirmados } = req.body;
-    if (!["confirmado", "rechazado"].includes(decision)) return res.status(400).send("Decisión inválida.");
 
-    db.get("SELECT cantidad FROM invitados WHERE id = ?", [id], (err, row) => {
-        if (err || !row) return res.status(404).send("Invitación no encontrada.");
-        const max = parseInt(row.cantidad || 0);
-        let confirmadosInt = 0;
-        if (decision === 'confirmado') {
-            confirmadosInt = parseInt(confirmados, 10);
-            if (isNaN(confirmadosInt) || confirmadosInt < 1) confirmadosInt = 1; // mínimo 1 si confirma
-            if (confirmadosInt > max) confirmadosInt = max; // clamp
+    if (!["confirmado", "rechazado"].includes(decision)) {
+        return res.status(400).send("Decisión inválida.");
+    }
+
+    db.get("SELECT * FROM invitados WHERE id = ?", [id], (err, invitado) => {
+        if (err || !invitado) {
+            return res.status(404).send("Invitación no encontrada.");
         }
+
+        if (invitado.estado !== "pendiente") {
+            return res.status(409).render("invitacion", {
+                invitado,
+                bloquearFormulario: true,
+                alerta: {
+                    tipo: "info",
+                    mensaje: "Ya registramos tu respuesta. Si necesitás hacer un cambio, contactá a los organizadores."
+                }
+            });
+        }
+
+        const max = parseInt(invitado.cantidad || 0, 10);
+        let confirmadosInt = 0;
+
+        if (decision === "confirmado") {
+            confirmadosInt = parseInt(confirmados, 10);
+
+            if (isNaN(confirmadosInt) || confirmadosInt < 1) confirmadosInt = 1;
+            if (confirmadosInt > max) confirmadosInt = max;
+        }
+
         db.run(
             "UPDATE invitados SET estado = ?, confirmados = ? WHERE id = ? AND estado = 'pendiente'",
             [decision, confirmadosInt, id],
             function (err2) {
-                if (err2) return res.status(500).send("Error al guardar respuesta.");
-
-                if (this.changes === 0) {
-                    if (req.accepts("html")) {
-                        return res
-                            .status(409)
-                            .render("mensaje", {
-                                titulo: "Invitación ya respondida",
-                                tituloH1: "¡Ya tenemos tu respuesta!",
-                                mensaje: "Parece que esta invitación ya fue respondida anteriormente. Si necesitás realizar un cambio, por favor contactá a los organizadores."
-                            });
-                    }
-                    return res.status(409).send("La invitación ya fue respondida anteriormente.");
+                if (err2) {
+                    return res.status(500).send("Error al guardar respuesta.");
                 }
 
-                res.redirect("/gracias");
+                if (this.changes === 0) {
+                    return res.redirect(`/confirmar/${id}`);
+                }
+
+                return res.redirect(`/confirmar/${id}?exito=1`);
             }
         );
     });
