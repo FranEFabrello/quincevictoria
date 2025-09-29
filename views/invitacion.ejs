@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis 15 Años - Te invito a mi noche mágica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="preload" as="image" href="/assets/fondo.svg">
+    <link rel="preload" as="image" href="/assets/arbol.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     <style>
 
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400&display=swap');
-
+        /* Fuente cargada por <link>, se quita el @import para evitar bloqueo adicional */
         :root {
             --font-titles: 'Playfair Display', serif;
             --font-text: 'Lato', sans-serif;
@@ -651,14 +655,15 @@
 
 
 <div id="welcome-modal" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(40,60,90,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;">
-    <div style="background:#fff;padding:32px 24px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.18);text-align:center;max-width:90vw;">
-        <h2 style="color:#70A0C8;margin-bottom:0.7em;">¡Hola <%= invitado.nombre %>!</h2>
-        <p>Bienvenido a la invitación de Victoria.<br>¡Te esperamos para celebrar sus 15 años!</p>
-        <button id="welcome-accept" disabled class="loading" style="margin-top:1.2em;background:#70A0C8;color:#fff;padding:12px 32px;border:none;border-radius:8px;font-size:1.1em;cursor:not-allowed;opacity:.6;position:relative;">
-            <span class="spinner" aria-hidden="true"></span>
-            <span class="label-text">Cargando…</span>
-        </button>
-    </div>
+  <div style="background:#fff;padding:32px 24px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.18);text-align:center;max-width:90vw;min-width:300px;">
+    <h2 style="color:#70A0C8;margin-bottom:0.7em;">¡Hola <%= invitado.nombre %>!</h2>
+    <p style="margin:0 0 1em 0;">Preparando la experiencia...<br><small id="asset-progress" style="display:block;margin-top:6px;color:#666;">0% • 0/0</small></p>
+    <button id="welcome-accept" disabled class="loading" style="margin-top:.8em;background:#70A0C8;color:#fff;padding:12px 32px;border:none;border-radius:8px;font-size:1.05em;cursor:not-allowed;">
+      <span class="spinner" aria-hidden="true"></span>
+      <span class="label-text">Cargando…</span>
+    </button>
+    <p style="margin-top:12px;font-size:.7rem;color:#7a8694;">Si tarda demasiado podrás continuar en unos segundos.</p>
+  </div>
 </div>
 
     <div id="parallax-container">
@@ -806,249 +811,105 @@
     <div id="leaves-container"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-
 <script>
-    const countdown = () => {
-        const targetDate = new Date('November 29, 2025 22:00:00').getTime();
-        const now = new Date().getTime();
-        const gap = targetDate - now;
-        const second = 1000, minute = second * 60, hour = minute * 60, day = hour * 24;
-        const textDay = Math.floor(gap / day);
-        const textHour = Math.floor((gap % day) / hour);
-        const textMinute = Math.floor((gap % hour) / minute);
-        const textSecond = Math.floor((gap % minute) / second);
+// ================= PRELOADER GLOBAL DE ASSETS =================
+(function(){
+  const BTN = document.getElementById('welcome-accept');
+  const PROG_TEXT = document.getElementById('asset-progress');
+  const APPLY_TIMEOUT_MS = 15000; // Tiempo máximo antes de permitir acceso
 
-        document.getElementById('days').innerText = String(textDay).padStart(2, '0');
-        document.getElementById('hours').innerText = String(textHour).padStart(2, '0');
-        document.getElementById('minutes').innerText = String(textMinute).padStart(2, '0');
-        document.getElementById('seconds').innerText = String(textSecond).padStart(2, '0');
-    };
-    setInterval(countdown, 1000);
-    countdown();
+  // Recolectar backgrounds declarados con data-bg
+  const bgEls = Array.from(document.querySelectorAll('[data-bg]'));
+  const bgUrls = bgEls.map(el => el.dataset.bg).filter(Boolean);
 
+  // Hojas (usadas como background en CSS, las forzamos a precarga)
+  const leafUrls = ['/assets/hoja1.svg','/assets/hoja2.svg','/assets/hoja3.svg','/assets/hoja4.svg'];
 
-    const music = document.getElementById('background-music');
-    const musicBtn = document.getElementById('music-toggle');
-    const musicIcon = musicBtn.querySelector('i');
-    let hasInteracted = false;
-    const toggleMusic = () => {
-        if (!hasInteracted) hasInteracted = true;
-        if (music.paused) {
-            music.play();
-            musicIcon.className = 'fas fa-pause';
-        } else {
-            music.pause();
-            musicIcon.className = 'fas fa-play';
-        }
-    };
-    musicBtn.addEventListener('click', toggleMusic);
-    document.body.addEventListener('click', () => {
-        if (!hasInteracted && music.paused) {
-            music.play().then(() => {
-                hasInteracted = true;
-                musicIcon.className = 'fas fa-pause';
-            }).catch(e => console.log("El navegador bloqueó la reproducción automática."));
-        }
-    }, { once: true });
+  // Imágenes del carrusel (pueden ser pesadas: si deseas excluirlas, comenta la siguiente línea)
+  const swiperImgs = Array.from(document.querySelectorAll('.swiper-slide img')).map(img => img.getAttribute('src')).filter(Boolean);
 
-    function toggleCantidad(mostrar) {
-        const cantidadGroup = document.getElementById('cantidad-group');
-        const cantidadInput = document.getElementById('cantidad');
-        cantidadGroup.style.display = mostrar ? 'block' : 'none';
-        cantidadInput.required = mostrar;
-    }
+  // Audio (tratado como un asset más, sólo esperamos a metadata para no demorar demasiado)
+  const audio = document.getElementById('background-music');
+  const audioAssetId = '__audio__';
 
-    const bgLayer = document.getElementById('parallax-bg');
-    window.addEventListener('scroll', () => {
-        const docHeight = document.body.scrollHeight - window.innerHeight;
-        const scrollY = window.scrollY;
-        const percent = docHeight === 0 ? 0 : scrollY / docHeight;
-        bgLayer.style.backgroundPosition = `center ${percent * 100}%`;
+  const allUrls = Array.from(new Set([...bgUrls, ...leafUrls, ...swiperImgs]));
+  let total = allUrls.length + 1; // +1 audio
+  let loaded = 0;
+  let finished = false;
+
+  function updateProgress() {
+    const percent = total ? Math.round((loaded / total) * 100) : 100;
+    if (PROG_TEXT) PROG_TEXT.textContent = `${percent}% • ${loaded}/${total}`;
+  }
+
+  function markLoaded(id) {
+    loaded++; updateProgress();
+    if (loaded >= total) enableAccess();
+  }
+
+  function applyBgOnLoad(url) {
+    // Aplica el fondo a todos los elementos correspondientes inmediatamente tras carga
+    bgEls.filter(el => el.dataset.bg === url).forEach(el => {
+      el.style.setProperty('--lazy-bg', `url('${url}')`);
+      el.classList.add('bg-loaded');
+      el.classList.remove('lazy-bg');
+      el.removeAttribute('data-bg');
     });
-    const leavesContainer = document.getElementById('leaves-container');
+  }
 
-    const lazyBackgrounds = document.querySelectorAll('[data-bg]');
+  function preloadImage(url) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => { applyBgOnLoad(url); resolve(url); };
+      img.onerror = () => resolve(url);
+      img.src = url;
+    }).then(() => markLoaded(url));
+  }
 
-    const loadBackground = (element) => {
-        if (!element || !element.dataset.bg) return;
-        const src = element.dataset.bg;
-        const image = new Image();
-        const finalize = () => {
-            requestAnimationFrame(() => {
-                element.style.setProperty('--lazy-bg', `url('${src}')`);
-                element.classList.add('bg-loaded');
-                element.classList.remove('lazy-bg');
-                element.removeAttribute('data-bg');
-            });
-        };
-        image.addEventListener('load', finalize, { once: true });
-        image.addEventListener('error', () => {
-            element.classList.add('bg-loaded');
-            element.classList.remove('lazy-bg');
-            element.removeAttribute('data-bg');
-        }, { once: true });
-        image.src = src;
-    };
+  function preloadAll() {
+    if (!allUrls.length) total = 1; // sólo audio
+    updateProgress();
+    allUrls.forEach(preloadImage);
 
-    const runLazyObserver = () => {
-        if (!lazyBackgrounds.length) return;
-
-        const eager = Array.from(lazyBackgrounds).filter(el => el.dataset.bgPriority === 'eager');
-        eager.forEach(loadBackground);
-
-        const remaining = Array.from(lazyBackgrounds).filter(el => !el.dataset.bgPriority);
-        if (!remaining.length) return;
-
-        if ('IntersectionObserver' in window) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        loadBackground(entry.target);
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { rootMargin: '256px 0px' });
-            remaining.forEach(el => observer.observe(el));
-        } else {
-            remaining.forEach(loadBackground);
-        }
-    };
-
-    const scheduleLazyBackgrounds = () => {
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(runLazyObserver, { timeout: 1200 });
-        } else {
-            setTimeout(runLazyObserver, 120);
-        }
-    };
-
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        scheduleLazyBackgrounds();
+    if (audio) {
+      const onAudioReady = () => { audio.removeEventListener('loadeddata', onAudioReady); markLoaded(audioAssetId); };
+      audio.addEventListener('loadeddata', onAudioReady);
+      // Forzar carga metadata
+      try { audio.load(); } catch(_) { markLoaded(audioAssetId); }
+      // Fallback si no dispara evento
+      setTimeout(() => { markLoaded(audioAssetId); }, 4000);
     } else {
-        window.addEventListener('DOMContentLoaded', scheduleLazyBackgrounds, { once: true });
+      markLoaded(audioAssetId); // no hay audio
     }
 
-    /*    Swiper initialization */
+    // Fallback global
+    setTimeout(() => enableAccess(true), APPLY_TIMEOUT_MS);
+  }
 
-    // ===== INICIALIZACIÓN DE SWIPER.JS (ACTUALIZADO) =====
-    const swiper = new Swiper('.swiper', {
-        effect: 'coverflow',
-        grabCursor: true,
-        centeredSlides: true,
-        slidesPerView: 'auto',
-        coverflowEffect: {
-            rotate: 50,
-            stretch: 0,
-            depth: 100,
-            modifier: 1,
-            slideShadows: true,
-        },
+  function enableAccess(timeoutFallback=false) {
+    if (finished) return; finished = true;
+    BTN.disabled = false;
+    BTN.classList.remove('loading');
+    BTN.style.cursor = 'pointer'; BTN.style.opacity = '1';
+    const sp = BTN.querySelector('.spinner'); if (sp) sp.remove();
+    const lbl = BTN.querySelector('.label-text');
+    if (lbl) lbl.textContent = timeoutFallback && loaded < total ? 'Entrar (carga parcial)' : 'Aceptar';
+    if (PROG_TEXT && timeoutFallback && loaded < total) PROG_TEXT.textContent += ' • Timeout';
+  }
 
-        loop: true,
+  preloadAll();
+})();
+// ================= FIN PRELOADER GLOBAL =================
 
-        // AÑADIDO: Deslizamiento automático cada 5 segundos
-        autoplay: {
-            delay: 5000,
-            disableOnInteraction: false, // El autoplay no se detiene si el usuario interactúa
-        },
-
-        pagination: {
-            el: '.swiper-pagination',
-            clickable: true,
-        },
-
-        navigation: {
-            nextEl: '.swiper-button-next',
-            prevEl: '.swiper-button-prev',
-        },
-    });
-
-
-    // --- PRELOAD SVG CRÍTICOS ANTES DE PERMITIR ACEPTAR ---
-    const welcomeBtn = document.getElementById('welcome-accept');
-    function preloadCriticalSvgs(timeout = 5000) {
-      return new Promise(resolve => {
-        const nodes = document.querySelectorAll('[data-bg][data-bg-priority="eager"]');
-        const urls = [...new Set(Array.from(nodes).map(n => n.dataset.bg).filter(Boolean))];
-        if (!urls.length) return resolve();
-        let done = 0;
-        const finish = () => { done++; if (done >= urls.length) resolve(); };
-        urls.forEach(u => { const img = new Image(); img.onload = finish; img.onerror = finish; img.src = u; });
-        setTimeout(resolve, timeout); // fallback
-      });
-    }
-    preloadCriticalSvgs().then(() => {
-      if (welcomeBtn) {
-        welcomeBtn.disabled = false;
-        welcomeBtn.classList.remove('loading');
-        const sp = welcomeBtn.querySelector('.spinner'); if (sp) sp.remove();
-        const lbl = welcomeBtn.querySelector('.label-text');
-        if (lbl) lbl.textContent = 'Aceptar'; else if (welcomeBtn.textContent.startsWith('Cargando')) welcomeBtn.textContent = 'Aceptar';
-        welcomeBtn.style.cursor = 'pointer';
-        welcomeBtn.style.opacity = '1';
-      }
-    });
-
-
-    // JS para el modal y la música
-    welcomeBtn.onclick = function() {
-    if (welcomeBtn.disabled) return; // aún cargando
-    document.getElementById('welcome-modal').style.display = 'none';
-    const music = document.getElementById('background-music');
-    const musicIcon = document.getElementById('music-toggle').querySelector('i');
-    music.play().then(() => { musicIcon.className = 'fas fa-pause'; }).catch(() => {});
+// Reemplazar anterior handler (aseguramos no dobleasignar)
+const welcomeBtn = document.getElementById('welcome-accept');
+welcomeBtn.onclick = function() {
+  if (welcomeBtn.disabled) return;
+  document.getElementById('welcome-modal').style.display = 'none';
+  const music = document.getElementById('background-music');
+  const musicIcon = document.getElementById('music-toggle').querySelector('i');
+  music.play().then(() => { musicIcon.className = 'fas fa-pause'; }).catch(() => {});
 };
-
-
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const maxLeaves = prefersReducedMotion
-        ? 8
-        : (window.matchMedia('(max-width: 768px)').matches ? 16 : 26);
-    const leafTypes = 4;
-    let activeLeaves = 0;
-
-    function scheduleLeafRemoval(leaf) {
-        setTimeout(() => {
-            leaf.remove();
-            activeLeaves = Math.max(activeLeaves - 1, 0);
-        }, 13000);
-    }
-
-    function createLeaf() {
-        const leaf = document.createElement('div');
-        const randomLeafType = Math.floor(Math.random() * leafTypes) + 1;
-        leaf.classList.add('leaf', `leaf-${randomLeafType}`);
-        leaf.style.left = `${Math.random() * 100}vw`;
-        leaf.style.animationDuration = `${Math.random() * 5 + 8}s`;
-        leaf.style.animationDelay = `${Math.random() * 5}s`;
-        return leaf;
-    }
-
-    function spawnLeaf() {
-        if (document.hidden) return;
-        if (activeLeaves >= maxLeaves) return;
-        const leaf = createLeaf();
-        leavesContainer.appendChild(leaf);
-        activeLeaves += 1;
-        scheduleLeafRemoval(leaf);
-    }
-
-    const leafIntervalDelay = prefersReducedMotion ? 2400 : 1200;
-
-    if (!prefersReducedMotion) {
-        setInterval(spawnLeaf, leafIntervalDelay);
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                spawnLeaf();
-            }
-        });
-        spawnLeaf();
-    } else {
-        spawnLeaf();
-    }
-
-
-
 </script>
 
 
