@@ -49,6 +49,7 @@
             background-position: center top;
             background-repeat: no-repeat;
             background-size: cover;
+            background-image: var(--lazy-bg, none);
             z-index: 0;
         }
         #content-wrapper {
@@ -97,11 +98,20 @@
         .card-mensaje-content a:hover {
             background-color: #89a8c6;
         }
+        .lazy-bg {
+            --lazy-bg: none;
+            background-color: rgba(112, 160, 200, 0.12);
+            transition: background-color 0.4s ease;
+        }
+
+        .bg-loaded {
+            background-color: transparent;
+        }
     </style>
 </head>
 <body>
 <div class="mobile-container">
     <div id="parallax-container">
-        <div class="parallax-layer" id="parallax-bg" style="background-image: url('/assets/fondo.svg');"></div>
+        <div class="parallax-layer lazy-bg" id="parallax-bg" data-bg="/assets/fondo.svg" data-bg-priority="eager"></div>
     </div>
     <div id="content-wrapper">

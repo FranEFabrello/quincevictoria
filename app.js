@@ -9,6 +9,7 @@ const session = require("express-session");
 const app = express();
 const upload = multer({ dest: "uploads/" });
 const db = new sqlite3.Database("database.db");
+const isProduction = process.env.NODE_ENV === "production";
 
 const CLAVE_CORRECTA = "Victoria2025**";
 
@@ -22,8 +23,20 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true }));
 
+const assetCacheOptions = {
+    maxAge: isProduction ? "14d" : 0,
+    setHeaders: (res, assetPath) => {
+        if (!isProduction) {
+            res.setHeader("Cache-Control", "no-cache");
+            return;
+        }
+        if (/\.(svg|png|jpg|jpeg|gif|webp)$/i.test(assetPath)) {
+            res.setHeader("Cache-Control", "public, max-age=1209600, immutable");
+        }
+    }
+};
 
-app.use("/assets", express.static(path.join(__dirname, "assets")));
+app.use("/assets", express.static(path.join(__dirname, "assets"), assetCacheOptions));
 
 
 

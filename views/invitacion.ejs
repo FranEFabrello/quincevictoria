@@ -74,6 +74,7 @@
             background-position: center top;
             background-repeat: no-repeat;
             background-size: cover;
+            background-image: var(--lazy-bg, none);
             transition: background-position 0.3s;
             z-index: 0;
         }
@@ -109,7 +110,7 @@
             position: relative;
             height: 100vh;
             width: 100%;
-            background-image: url('/assets/arbol.svg');
+            background-image: var(--lazy-bg, none);
             background-repeat: no-repeat;
             background-position: center top;
             background-size: cover;
@@ -150,7 +151,7 @@
             width: 100%; /* Ajustado de 100vw */
             min-width: 100%;
             aspect-ratio: 4911 / 3099;
-            background-image: url('/assets/felino.svg');
+            background-image: var(--lazy-bg, none);
             background-repeat: no-repeat;
             background-position: center bottom;
             background-size: cover;
@@ -168,7 +169,7 @@
             width: 100%; /* Ajustado de 100vw */
             min-width: 100%;
             height: 175px;
-            background-image: url('/assets/separador.svg');
+            background-image: var(--lazy-bg, none);
             background-repeat: no-repeat;
             background-position: center bottom;
             background-size: cover;
@@ -187,7 +188,7 @@
             width: 100%; /* Ajustado de 100vw */
             min-width: 100%;
             height: 330px;
-            background-image: url('/assets/felino2.svg');
+            background-image: var(--lazy-bg, none);
             background-repeat: no-repeat;
             background-position: center bottom;
             background-size: cover;
@@ -204,7 +205,7 @@
             width: 100%; /* Ajustado de 100vw */
             min-width: 100%;
             height: 300px;
-            background-image: url('/assets/felino3.svg');
+            background-image: var(--lazy-bg, none);
             background-repeat: no-repeat;
             background-position: center bottom;
             background-size: cover;
@@ -597,6 +598,16 @@
             background-image: url('/assets/hoja4.svg');
         }
 
+        .lazy-bg {
+            --lazy-bg: none;
+            background-color: rgba(112, 160, 200, 0.12);
+            transition: background-color 0.4s ease;
+        }
+
+        .bg-loaded {
+            background-color: transparent;
+        }
+
         /* La animación @keyframes swaying-fall que creamos antes no necesita cambios. */
         @keyframes swaying-fall {
             0% {
@@ -640,9 +651,9 @@
     </div>
 </div>
 
-<div id="parallax-container">
-    <div class="parallax-layer" id="parallax-bg" style="background-image: url('/assets/fondo.svg');"></div>
-</div>
+    <div id="parallax-container">
+        <div class="parallax-layer lazy-bg" id="parallax-bg" data-bg="/assets/fondo.svg" data-bg-priority="eager"></div>
+    </div>
 
 <div id="content-wrapper">
     <div id="music-player">
@@ -650,7 +661,7 @@
         <button id="music-toggle" aria-label="Controlar Música"><i class="fas fa-play"></i></button>
     </div>
 
-    <header class="hero">
+    <header class="hero lazy-bg" data-bg="/assets/arbol.svg" data-bg-priority="eager">
         <div class="hero-box">
             <div class="blur-fade">
                 <h1>VICTORIA</h1>
@@ -663,7 +674,7 @@
 
 
 
-    <div class="arbusto-section"></div>
+    <div class="arbusto-section lazy-bg" data-bg="/assets/felino.svg"></div>
 
     <main>
         <section class="section countdown-section">
@@ -676,7 +687,7 @@
             </div>
         </section>
 
-        <div class="arbusto2-section"></div>
+        <div class="arbusto2-section lazy-bg" data-bg="/assets/separador.svg"></div>
 
         <section class="section blur-fade-2">
             <div class="section-content">
@@ -690,18 +701,18 @@
         </section>
 
 
-        <div class="arbusto-felino2" style="transform: scaleX(-1);"></div>
+        <div class="arbusto-felino2 lazy-bg" data-bg="/assets/felino2.svg" style="transform: scaleX(-1);"></div>
 
         <section class="section blur-fade-2">
             <h2>Un pequeño recuerdo</h2>
             <div class="swiper">
                 <div class="swiper-wrapper">
-                    <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1613924457768-4c1f46f43d11?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 1"></div>
-                    <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1613789599680-e95673ca7d80?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 2"></div>
-                    <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1527345925176-fbb4fd90033e?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 3"></div>
-                    <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1562346531-6fd51e998566?q=80&w=709&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 4"></div>
-                    <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1542370773-ae6d54f6748d?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 5"></div>
-                    <div class="swiper-slide"><img src="https://images.unsplash.com/photo-1513597607252-a125b383749a?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 6"></div>
+                    <div class="swiper-slide"><img loading="lazy" src="https://images.unsplash.com/photo-1613924457768-4c1f46f43d11?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 1"></div>
+                    <div class="swiper-slide"><img loading="lazy" src="https://images.unsplash.com/photo-1613789599680-e95673ca7d80?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 2"></div>
+                    <div class="swiper-slide"><img loading="lazy" src="https://images.unsplash.com/photo-1527345925176-fbb4fd90033e?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 3"></div>
+                    <div class="swiper-slide"><img loading="lazy" src="https://images.unsplash.com/photo-1562346531-6fd51e998566?q=80&w=709&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 4"></div>
+                    <div class="swiper-slide"><img loading="lazy" src="https://images.unsplash.com/photo-1542370773-ae6d54f6748d?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 5"></div>
+                    <div class="swiper-slide"><img loading="lazy" src="https://images.unsplash.com/photo-1513597607252-a125b383749a?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Foto de Victoria 6"></div>
                 </div>
                 <div class="swiper-navigation-container">
                     <div class="swiper-button-prev"></div>
@@ -711,7 +722,7 @@
             </div>
         </section>
 
-        <div class="arbusto2-section"></div>
+        <div class="arbusto2-section lazy-bg" data-bg="/assets/separador.svg"></div>
 
         <section class="section blur-fade-2">
             <h2>Regalos</h2>
@@ -719,7 +730,7 @@
         </section>
 
 
-        <div class="arbusto-felino3" style="transform: scaleX(-1);"></div>
+        <div class="arbusto-felino3 lazy-bg" data-bg="/assets/felino3.svg" style="transform: scaleX(-1);"></div>
 
         <!-- Dress Code, después de "La Fiesta" -->
         <section class="section blur-fade-2">
@@ -729,7 +740,7 @@
             </div>
         </section>
 
-        <div class="arbusto3-section"></div>
+        <div class="arbusto3-section lazy-bg" data-bg="/assets/separador.svg"></div>
 
         <section class="section blur-fade-2">
             <div class="section-content">
@@ -740,7 +751,7 @@
             </div>
         </section>
 
-        <div class="arbusto3-section"style="transform: scaleX(-1);"></div>
+        <div class="arbusto3-section lazy-bg" data-bg="/assets/separador.svg" style="transform: scaleX(-1);"></div>
 
 
         <section class="section blur-fade-2">
@@ -777,7 +788,7 @@
         </section>
 
 
-        <div class="arbusto-felino3"></div>
+        <div class="arbusto-felino3 lazy-bg" data-bg="/assets/felino3.svg"></div>
 
     </main>
 </div>
@@ -803,6 +814,7 @@
         document.getElementById('seconds').innerText = String(textSecond).padStart(2, '0');
     };
     setInterval(countdown, 1000);
+    countdown();
 
 
     const music = document.getElementById('background-music');
@@ -845,33 +857,65 @@
     });
     const leavesContainer = document.getElementById('leaves-container');
 
+    const lazyBackgrounds = document.querySelectorAll('[data-bg]');
 
+    const loadBackground = (element) => {
+        if (!element || !element.dataset.bg) return;
+        const src = element.dataset.bg;
+        const image = new Image();
+        const finalize = () => {
+            requestAnimationFrame(() => {
+                element.style.setProperty('--lazy-bg', `url('${src}')`);
+                element.classList.add('bg-loaded');
+                element.classList.remove('lazy-bg');
+                element.removeAttribute('data-bg');
+            });
+        };
+        image.addEventListener('load', finalize, { once: true });
+        image.addEventListener('error', () => {
+            element.classList.add('bg-loaded');
+            element.classList.remove('lazy-bg');
+            element.removeAttribute('data-bg');
+        }, { once: true });
+        image.src = src;
+    };
 
-    function createLeaf() {
-        const leaf = document.createElement('div');
+    const runLazyObserver = () => {
+        if (!lazyBackgrounds.length) return;
 
-        // --- INICIO DE LA MODIFICACIÓN ---
+        const eager = Array.from(lazyBackgrounds).filter(el => el.dataset.bgPriority === 'eager');
+        eager.forEach(loadBackground);
 
-        // 1. Definimos cuántos tipos de hojas tenemos.
-        const leafTypes = 4;
+        const remaining = Array.from(lazyBackgrounds).filter(el => !el.dataset.bgPriority);
+        if (!remaining.length) return;
 
-        // 2. Generamos un número aleatorio entre 1 y 4.
-        const randomLeafType = Math.floor(Math.random() * leafTypes) + 1;
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        loadBackground(entry.target);
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { rootMargin: '256px 0px' });
+            remaining.forEach(el => observer.observe(el));
+        } else {
+            remaining.forEach(loadBackground);
+        }
+    };
 
-        // 3. Añadimos la clase base 'leaf' y la clase del diseño aleatorio (ej: 'leaf-3').
-        leaf.classList.add('leaf', `leaf-${randomLeafType}`);
+    const scheduleLazyBackgrounds = () => {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(runLazyObserver, { timeout: 1200 });
+        } else {
+            setTimeout(runLazyObserver, 120);
+        }
+    };
 
-        // --- FIN DE LA MODIFICACIÓN ---
-
-        leaf.style.left = `${Math.random() * 100}vw`;
-        leaf.style.animationDuration = `${Math.random() * 5 + 8}s`; // Duración aleatoria
-        leaf.style.animationDelay = `${Math.random() * 5}s`; // Retraso aleatorio
-
-        leavesContainer.appendChild(leaf);
-
-        setTimeout(() => {
-            leaf.remove();
-        }, 13000); // 13000ms = 13s, tiempo suficiente para que la animación más larga termine
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        scheduleLazyBackgrounds();
+    } else {
+        window.addEventListener('DOMContentLoaded', scheduleLazyBackgrounds, { once: true });
     }
 
     /*    Swiper initialization */
@@ -921,8 +965,52 @@
     };
 
 
-    // Genera una hoja cada 800 ms
-    setInterval(createLeaf, 800);
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const maxLeaves = prefersReducedMotion
+        ? 8
+        : (window.matchMedia('(max-width: 768px)').matches ? 16 : 26);
+    const leafTypes = 4;
+    let activeLeaves = 0;
+
+    function scheduleLeafRemoval(leaf) {
+        setTimeout(() => {
+            leaf.remove();
+            activeLeaves = Math.max(activeLeaves - 1, 0);
+        }, 13000);
+    }
+
+    function createLeaf() {
+        const leaf = document.createElement('div');
+        const randomLeafType = Math.floor(Math.random() * leafTypes) + 1;
+        leaf.classList.add('leaf', `leaf-${randomLeafType}`);
+        leaf.style.left = `${Math.random() * 100}vw`;
+        leaf.style.animationDuration = `${Math.random() * 5 + 8}s`;
+        leaf.style.animationDelay = `${Math.random() * 5}s`;
+        return leaf;
+    }
+
+    function spawnLeaf() {
+        if (document.hidden) return;
+        if (activeLeaves >= maxLeaves) return;
+        const leaf = createLeaf();
+        leavesContainer.appendChild(leaf);
+        activeLeaves += 1;
+        scheduleLeafRemoval(leaf);
+    }
+
+    const leafIntervalDelay = prefersReducedMotion ? 2400 : 1200;
+
+    if (!prefersReducedMotion) {
+        setInterval(spawnLeaf, leafIntervalDelay);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                spawnLeaf();
+            }
+        });
+        spawnLeaf();
+    } else {
+        spawnLeaf();
+    }
 
 
 
