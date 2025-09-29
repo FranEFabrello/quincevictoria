@@ -4,16 +4,19 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "prerender:svg": "node scripts/prerender-svg.js"
+    "prerender:svg": "node scripts/prerender-svg.js",
+    "optimize:svg": "npm run prerender:svg"
   },
   "dependencies": {
+    "compression": "^1.7.4",
     "ejs": "^3.1.9",
     "express": "^4.18.2",
     "express-session": "^1.18.2",
     "multer": "^1.4.5-lts.1",
-    "sqlite3": "^5.1.6",
-    "xlsx": "^0.18.5",
     "sharp": "^0.33.4",
-    "svgson": "^5.2.0"
+    "sqlite3": "^5.1.6",
+    "svgson": "^5.2.0",
+    "svgo": "^3.3.2",
+    "xlsx": "^0.18.5"
   }
 }

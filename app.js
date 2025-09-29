@@ -5,6 +5,7 @@ const fs = require("fs");
 const XLSX = require("xlsx");
 const sqlite3 = require("sqlite3").verbose();
 const session = require("express-session");
+const compression = require("compression");
 
 const app = express();
 const upload = multer({ dest: "uploads/" });
@@ -22,6 +23,7 @@ app.use(session({
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true }));
+app.use(compression({ threshold: 0 }));
 
 const prerenderedAssetsDir = path.join(__dirname, "assets", "prerendered");
 
@@ -41,22 +43,25 @@ const assetCacheOptions = {
 app.use("/assets", express.static(prerenderedAssetsDir, assetCacheOptions));
 
 app.use("/assets", (req, res, next) => {
-    if (!req.path.toLowerCase().endsWith(".svg")) {
-        return next();
-    }
+    const ext = path.extname(req.path).toLowerCase();
+    if (ext !== ".svg") return next();
 
     const baseName = path.basename(req.path, ".svg");
+    const avifPath = path.join(prerenderedAssetsDir, `${baseName}.avif`);
     const webpPath = path.join(prerenderedAssetsDir, `${baseName}.webp`);
     const pngPath = path.join(prerenderedAssetsDir, `${baseName}.png`);
 
-    if (req.accepts("image/webp") && fs.existsSync(webpPath)) {
-        return res.sendFile(webpPath);
-    }
+    const accept = req.headers['accept'] || '';
 
-    if (req.accepts("image/png") && fs.existsSync(pngPath)) {
-        return res.sendFile(pngPath);
+    if (accept.includes('image/avif') && fs.existsSync(avifPath)) {
+        return res.type('image/avif').sendFile(avifPath);
     }
-
+    if (accept.includes('image/webp') && fs.existsSync(webpPath)) {
+        return res.type('image/webp').sendFile(webpPath);
+    }
+    if (accept.includes('image/png') && fs.existsSync(pngPath)) {
+        return res.type('image/png').sendFile(pngPath);
+    }
     return next();
 });
 
