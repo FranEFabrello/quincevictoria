@@ -384,6 +384,53 @@ app.get("/admin/invitados", checkAdmin, (req, res) => {
     });
 });
 
+app.get("/admin/invitado/nuevo", checkAdmin, (req, res) => {
+    res.render("admin_nuevo_invitado");
+});
+
+app.post("/admin/invitado/crear", checkAdmin, async (req, res) => {
+    const { nombre = "", apellido = "", cantidad = 0 } = req.body;
+
+    try {
+        const nombreLimpio = nombre.trim();
+        const apellidoLimpio = apellido.trim();
+        const cantidadNumero = Math.max(parseInt(cantidad, 10) || 0, 0);
+
+        const textoBase = [nombreLimpio, apellidoLimpio].filter(Boolean).join("-");
+        let idBase = normalizarTexto(textoBase);
+        if (!idBase) {
+            idBase = "invitado";
+        }
+
+        let id = idBase;
+        let contador = 1;
+        while (await existeId(id)) {
+            id = `${idBase}-${contador++}`;
+        }
+
+        await runAsync(
+            "INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES (?, ?, ?, ?, ?, ?)",
+            [
+                id,
+                nombreLimpio,
+                apellidoLimpio,
+                cantidadNumero,
+                "pendiente",
+                0
+            ]
+        );
+
+        res.redirect("/admin/invitados");
+    } catch (error) {
+        console.error("Error al crear el invitado:", error);
+        res.status(500).render("mensaje", {
+            titulo: "Error al crear invitado",
+            tituloH1: "No se pudo guardar el invitado",
+            mensaje: "Ocurrió un problema al guardar el nuevo invitado. Intentá nuevamente."
+        });
+    }
+});
+
 // NUEVA RUTA: Mostrar el formulario de edición
 app.get("/admin/invitado/editar/:id", checkAdmin, (req, res) => {
     const id = req.params.id;
