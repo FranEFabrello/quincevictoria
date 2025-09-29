@@ -23,6 +23,8 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true }));
 
+const prerenderedAssetsDir = path.join(__dirname, "assets", "prerendered");
+
 const assetCacheOptions = {
     maxAge: isProduction ? "14d" : 0,
     setHeaders: (res, assetPath) => {
@@ -35,6 +37,28 @@ const assetCacheOptions = {
         }
     }
 };
+
+app.use("/assets", express.static(prerenderedAssetsDir, assetCacheOptions));
+
+app.use("/assets", (req, res, next) => {
+    if (!req.path.toLowerCase().endsWith(".svg")) {
+        return next();
+    }
+
+    const baseName = path.basename(req.path, ".svg");
+    const webpPath = path.join(prerenderedAssetsDir, `${baseName}.webp`);
+    const pngPath = path.join(prerenderedAssetsDir, `${baseName}.png`);
+
+    if (req.accepts("image/webp") && fs.existsSync(webpPath)) {
+        return res.sendFile(webpPath);
+    }
+
+    if (req.accepts("image/png") && fs.existsSync(pngPath)) {
+        return res.sendFile(pngPath);
+    }
+
+    return next();
+});
 
 app.use("/assets", express.static(path.join(__dirname, "assets"), assetCacheOptions));
 

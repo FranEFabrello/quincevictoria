@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "prerender:svg": "node scripts/prerender-svg.js"
   },
   "dependencies": {
     "ejs": "^3.1.9",
@@ -11,6 +12,8 @@
     "express-session": "^1.18.2",
     "multer": "^1.4.5-lts.1",
     "sqlite3": "^5.1.6",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "sharp": "^0.33.4",
+    "svgson": "^5.2.0"
   }
 }
