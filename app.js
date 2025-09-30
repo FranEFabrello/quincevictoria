@@ -231,6 +231,17 @@ app.post("/upload", upload.single("excel"), async (req, res) => {
         await execAsync("BEGIN TRANSACTION;");
         transactionActiva = true;
 
+        const posiblesClavesCantidad = [
+            "Cantidad",
+            "cantidad",
+            "Cantidad Invitados",
+            "Cantidad invitados",
+            "Cantidad de Invitados",
+            "Cantidad de invitados",
+            "Invitados",
+            "Personas"
+        ];
+
         for (const fila of datos) {
             const idBase = normalizarTexto((fila.Nombre || "") + "-" + (fila.Apellido || ""));
             let id = idBase;
@@ -239,13 +250,27 @@ app.post("/upload", upload.single("excel"), async (req, res) => {
                 id = idBase + "-" + contador++;
             }
 
+            let cantidadRaw = undefined;
+            for (const clave of posiblesClavesCantidad) {
+                if (Object.prototype.hasOwnProperty.call(fila, clave) && fila[clave] !== undefined && fila[clave] !== null && fila[clave] !== "") {
+                    cantidadRaw = fila[clave];
+                    break;
+                }
+            }
+
+            let cantidadNormalizada = parseInt(cantidadRaw, 10);
+            if (Number.isNaN(cantidadNormalizada) || cantidadNormalizada < 0) {
+                cantidadNormalizada = 0;
+                console.warn("Fila sin cantidad válida, se usará 0:", fila);
+            }
+
             await runAsync(
                 "INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES (?, ?, ?, ?, ?, ?)",
                 [
                     id,
                     fila.Nombre,
                     fila.Apellido,
-                    fila.Cantidad,
+                    cantidadNormalizada,
                     "pendiente",
                     0
                 ]
