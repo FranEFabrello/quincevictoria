@@ -18,7 +18,7 @@ function optimizeSvg(svgContent, filePath) {
       floatPrecision: 2,
       plugins: [
         'removeDoctype','removeXMLProcInst','removeComments','removeMetadata','removeEditorsNSData',
-        'cleanupAttrs','convertStyleToAttrs','minifyStyles','cleanupIDs','removeUselessDefs','collapseGroups',
+        'cleanupAttrs','convertStyleToAttrs','minifyStyles','cleanupIds','removeUselessDefs','collapseGroups',
         'convertShapeToPath','convertPathData','mergePaths','removeEmptyContainers','removeEmptyText',
         { name: 'removeDimensions', active: true },
         { name: 'sortAttrs', active: true },
