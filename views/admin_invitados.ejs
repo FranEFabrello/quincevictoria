@@ -29,6 +29,8 @@
         .status-confirmado { background-color: #28a745; }
         .status-pendiente { background-color: #6c757d; }
         .status-rechazado { background-color: #dc3545; }
+        .link-cell { word-break: break-all; font-size: 12px; }
+        .link-cell a { color: #007bff; }
     </style>
 </head>
 <body>
@@ -75,6 +77,7 @@
                 <th>Invitados (Grupo)</th>
                 <th>Asistirán</th>
                 <th>Estado</th>
+                <th>Link</th>
                 <th>Acciones</th>
             </tr>
             </thead>
@@ -89,6 +92,9 @@
                         <span class="status status-<%= invitado.estado.toLowerCase() %>">
                             <%= invitado.estado %>
                         </span>
+                    </td>
+                    <td class="link-cell">
+                        <a target="_blank" href="<%= baseUrl %>/confirmar/<%= invitado.id %>"><%= baseUrl %>/confirmar/<%= invitado.id %></a>
                     </td>
                     <td>
                         <a href="/admin/invitado/editar/<%= invitado.id %>" class="btn btn-edit">Editar</a>
