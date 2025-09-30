@@ -62,7 +62,7 @@ async function processSvgFile(fileName) {
     return { fileName, skipped: true };
   }
 
-  const img = sharp(Buffer.from(optimized));
+  const img = sharp(Buffer.from(optimized), { unlimited: true });
   await Promise.all([
     img.clone().png({ compressionLevel: 9, progressive: true }).toFile(path.join(OUTPUT_DIR, `${baseName}.png`)),
     img.clone().webp({ quality: 82 }).toFile(path.join(OUTPUT_DIR, `${baseName}.webp`)),
