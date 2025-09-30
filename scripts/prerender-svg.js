@@ -46,12 +46,13 @@ async function needsRender(baseName, srcStat) {
 async function processSvgFile(fileName) {
   const inputPath = path.join(ASSETS_DIR, fileName);
   const baseName = path.parse(fileName).name;
-  const srcStat = await fs.stat(inputPath);
+  let srcStat = await fs.stat(inputPath);
   const original = await fs.readFile(inputPath, 'utf8');
   const optimized = optimizeSvg(original, inputPath);
 
   if (optimized.length < original.length) {
     await fs.writeFile(inputPath, optimized, 'utf8');
+    srcStat = await fs.stat(inputPath);
     console.log(`✂ ${fileName}: ${(original.length/1024).toFixed(1)}KB → ${(optimized.length/1024).toFixed(1)}KB`);
   } else {
     console.log(`= ${fileName}: sin reducción`);
