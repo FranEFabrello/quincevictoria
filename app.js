@@ -394,13 +394,15 @@ app.get("/admin/invitados", checkAdmin, (req, res) => {
         });
         const pendientes = rows.filter(r => r.estado === 'pendiente').length;
         const rechazados = rows.filter(r => r.estado === 'rechazado').length;
+        const baseUrl = req.protocol + "://" + req.get("host");
 
         res.render("admin_invitados", {
             invitados: rows,
             totalInvitados,
             confirmados,
             pendientes,
-            rechazados
+            rechazados,
+            baseUrl
         });
     });
 });
