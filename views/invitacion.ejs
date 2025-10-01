@@ -1167,7 +1167,43 @@ welcomeBtn.addEventListener('click', ()=>{ if(!welcomeBtn.disabled) initLeavesAn
 // Por si el usuario ya estaba dentro (sin modal) iniciamos al cargar
 if (!document.getElementById('welcome-modal')) initLeavesAnimation();
 </script>
-
+    <script>
+    // Script para elegir assets mobile/desktop automáticamente
+    (function() {
+      const isMobile = window.innerWidth <= 600;
+      const suffix = isMobile ? 'mobile' : 'desktop';
+      // Cambia data-bg de los fondos principales
+      document.querySelectorAll('[data-bg]').forEach(el => {
+        let bg = el.getAttribute('data-bg');
+        if (!bg) return;
+        // Solo reemplaza si existe versión optimizada
+        const base = bg.replace(/\.svg$/, '');
+        // Intenta usar webp, si no png
+        const webp = `${base}.${suffix}.webp`;
+        const png = `${base}.${suffix}.png`;
+        // Prueba si existe la imagen (solo para navegadores modernos)
+        const testImg = new Image();
+        testImg.onload = function() {
+          el.setAttribute('data-bg', webp);
+          el.style.setProperty('--lazy-bg', `url('${webp}')`);
+        };
+        testImg.onerror = function() {
+          el.setAttribute('data-bg', png);
+          el.style.setProperty('--lazy-bg', `url('${png}')`);
+        };
+        testImg.src = webp;
+      });
+      // Cambia hojas animadas en CSS
+      const style = document.createElement('style');
+      style.innerHTML = `
+        .leaf-1 { background-image: url('/assets/hoja1.${suffix}.webp'); }
+        .leaf-2 { background-image: url('/assets/hoja2.${suffix}.webp'); }
+        .leaf-3 { background-image: url('/assets/hoja3.${suffix}.webp'); }
+        .leaf-4 { background-image: url('/assets/hoja4.${suffix}.webp'); }
+      `;
+      document.head.appendChild(style);
+    })();
+    </script>
 
 </div>
 </body>
