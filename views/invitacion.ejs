@@ -1022,12 +1022,49 @@
 
 // Reemplazar anterior handler (aseguramos no dobleasignar)
 const welcomeBtn = document.getElementById('welcome-accept');
+const music = document.getElementById('background-music');
+const musicToggle = document.getElementById('music-toggle');
+const musicIcon = musicToggle ? musicToggle.querySelector('i') : null;
+
+function updateMusicIcon() {
+  if (!musicIcon) return;
+  const isPlaying = music && !music.paused && !music.ended;
+  musicIcon.classList.remove('fa-play', 'fa-pause');
+  musicIcon.classList.add(isPlaying ? 'fa-pause' : 'fa-play');
+}
+
+if (music) {
+  ['play', 'pause', 'ended'].forEach(eventName => {
+    music.addEventListener(eventName, updateMusicIcon);
+  });
+}
+
+if (music && musicToggle) {
+  musicToggle.addEventListener('click', () => {
+    if (music.paused || music.ended) {
+      const playPromise = music.play();
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise.catch(() => {});
+      }
+    } else {
+      music.pause();
+    }
+    updateMusicIcon();
+  });
+}
+
+updateMusicIcon();
+
 welcomeBtn.onclick = function() {
   if (welcomeBtn.disabled) return;
   document.getElementById('welcome-modal').style.display = 'none';
-  const music = document.getElementById('background-music');
-  const musicIcon = document.getElementById('music-toggle').querySelector('i');
-  music.play().then(() => { musicIcon.className = 'fas fa-pause'; }).catch(() => {});
+  if (music) {
+    const playPromise = music.play();
+    if (playPromise && typeof playPromise.then === 'function') {
+      playPromise.catch(() => {});
+    }
+  }
+  updateMusicIcon();
 };
 
 // ================= CUENTA REGRESIVA =================
