@@ -231,6 +231,7 @@ app.post("/upload", upload.single("excel"), async (req, res) => {
 // RUTA DE CONFIRMACIÓN MODIFICADA (Esta es la sección a reemplazar)
 app.get("/confirmar/:id", async (req, res) => {
     const id = req.params.id;
+    const mostrarToast = req.query.exito === "1";
 
     try {
         const invitado = await db.one("SELECT * FROM invitados WHERE id = ?", [id]);
@@ -266,7 +267,8 @@ app.get("/confirmar/:id", async (req, res) => {
             invitado,
             bloquearFormulario,
             alerta,
-            mostrarResumen
+            mostrarResumen,
+            mostrarToast
         });
     } catch (error) {
         console.error("Error al obtener invitado:", error);
@@ -314,7 +316,8 @@ app.post("/confirmar/:id", async (req, res) => {
                     tipo: "info",
                     mensaje: mensajeInfo
                 },
-                mostrarResumen: false
+                mostrarResumen: false,
+                mostrarToast: false
             });
         }
 

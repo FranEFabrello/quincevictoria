@@ -50,6 +50,55 @@
         }
 
 
+        .respuesta-toast {
+            position: fixed;
+            top: 18px;
+            left: 50%;
+            transform: translate(-50%, -16px);
+            background: rgba(47, 61, 92, 0.95);
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: 999px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            z-index: 12000;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+            opacity: 0;
+            animation: toastFadeIn 0.35s ease-out forwards, toastFadeOut 0.35s ease-in forwards;
+            animation-delay: 0s, 4s;
+        }
+
+        .respuesta-toast small {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 400;
+            margin-top: 4px;
+            opacity: 0.85;
+        }
+
+        @keyframes toastFadeIn {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -16px);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+
+        @keyframes toastFadeOut {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -16px);
+            }
+        }
+
+
         /* ================================== */
         /* == ESTILOS ORIGINALES AJUSTADOS == */
         /* ================================== */
@@ -744,6 +793,13 @@
 <body>
 
 <div class="mobile-container">
+
+    <% if (mostrarToast && alerta) { %>
+        <div class="respuesta-toast" role="status" aria-live="polite">
+            ¡Gracias por tu respuesta!
+            <small><%= alerta.mensaje %></small>
+        </div>
+    <% } %>
 
 
 
