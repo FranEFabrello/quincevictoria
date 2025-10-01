@@ -1,55 +1,54 @@
-const { Pool } = require("pg");
+const mysql = require("mysql2/promise");
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
+const pool = mysql.createPool({
+    host: "database-2.cw9s6awi6bw4.us-east-1.rds.amazonaws.com",
+    user: "admin",
+    password: "xSPlwRbeV5ktuhzW3P1p",
+    database: "quincevictoria", // Cambia esto si tu base tiene otro nombre
+    port: 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
 async function query(text, params = []) {
-    return pool.query(text, params);
+    const [rows] = await pool.execute(text, params);
+    return rows;
 }
 
 async function one(text, params = []) {
-    const { rows } = await query(text, params);
+    const rows = await query(text, params);
     return rows[0] || null;
 }
 
 async function many(text, params = []) {
-    const { rows } = await query(text, params);
-    return rows;
+    return query(text, params);
 }
 
 async function transaction(handler) {
-    const client = await pool.connect();
-    const helpers = {
-        query: (text, params = []) => client.query(text, params),
-        one: async (text, params = []) => {
-            const { rows } = await client.query(text, params);
-            return rows[0] || null;
-        },
-        many: async (text, params = []) => {
-            const { rows } = await client.query(text, params);
-            return rows;
-        }
-    };
-
+    const connection = await pool.getConnection();
     try {
-        await client.query("BEGIN");
+        await connection.beginTransaction();
+        const helpers = {
+            query: (text, params = []) => connection.execute(text, params).then(([rows]) => rows),
+            one: async (text, params = []) => {
+                const [rows] = await connection.execute(text, params);
+                return rows[0] || null;
+            },
+            many: async (text, params = []) => {
+                const [rows] = await connection.execute(text, params);
+                return rows;
+            }
+        };
         const result = await handler(helpers);
-        await client.query("COMMIT");
+        await connection.commit();
         return result;
-    } catch (error) {
-        await client.query("ROLLBACK");
-        throw error;
+    } catch (err) {
+        await connection.rollback();
+        throw err;
     } finally {
-        client.release();
+        connection.release();
     }
 }
 
-module.exports = {
-    pool,
-    query,
-    one,
-    many,
-    transaction
-};
+module.exports = { query, one, many, transaction };

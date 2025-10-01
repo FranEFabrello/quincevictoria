@@ -82,12 +82,12 @@ async function ensureSchema() {
     try {
         await db.query(`
             CREATE TABLE IF NOT EXISTS invitados (
-                id TEXT PRIMARY KEY,
-                nombre TEXT,
-                apellido TEXT,
-                cantidad INTEGER,
-                confirmados INTEGER,
-                estado TEXT
+                id VARCHAR(255) PRIMARY KEY,
+                nombre VARCHAR(255),
+                apellido VARCHAR(255),
+                cantidad INT,
+                confirmados INT,
+                estado VARCHAR(255)
             )
         `);
     } catch (error) {
@@ -109,7 +109,7 @@ function normalizarTexto(texto) {
 }
 
 async function existeId(id, executor = db) {
-    const row = await executor.one("SELECT 1 FROM invitados WHERE id = $1", [id]);
+    const row = await executor.one("SELECT 1 FROM invitados WHERE id = ?", [id]);
     return Boolean(row);
 }
 
@@ -120,7 +120,7 @@ app.get("/", (req, res) => {
 
 app.get("/estado", async (req, res) => {
     try {
-        const row = await db.one("SELECT COUNT(*)::int AS total FROM invitados");
+        const row = await db.one("SELECT COUNT(*) AS total FROM invitados");
         const isAdmin = req.session && req.session.adminAutenticado;
         res.json({ ok: true, total: row ? row.total : 0, admin: isAdmin });
     } catch (error) {
@@ -237,7 +237,7 @@ app.post("/upload", upload.single("excel"), async (req, res) => {
                 }
 
                 await runAsync(
-                    "INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES ($1, $2, $3, $4, $5, $6)",
+                    "INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES (?, ?, ?, ?, ?, ?)",
                     [
                         id,
                         fila.Nombre || null,
@@ -270,7 +270,7 @@ app.get("/confirmar/:id", async (req, res) => {
     const id = req.params.id;
 
     try {
-        const invitado = await db.one("SELECT * FROM invitados WHERE id = $1", [id]);
+        const invitado = await db.one("SELECT * FROM invitados WHERE id = ?", [id]);
 
         if (!invitado) {
             return res.status(404).render("mensaje", {
@@ -324,7 +324,7 @@ app.post("/confirmar/:id", async (req, res) => {
     }
 
     try {
-        const invitado = await db.one("SELECT * FROM invitados WHERE id = $1", [id]);
+        const invitado = await db.one("SELECT * FROM invitados WHERE id = ?", [id]);
 
         if (!invitado) {
             return res.status(404).send("Invitación no encontrada.");
@@ -352,7 +352,7 @@ app.post("/confirmar/:id", async (req, res) => {
         }
 
         const result = await db.query(
-            "UPDATE invitados SET estado = $1, confirmados = $2 WHERE id = $3 AND estado = 'pendiente' RETURNING id",
+            "UPDATE invitados SET estado = ?, confirmados = ? WHERE id = ? AND estado = 'pendiente' RETURNING id",
             [decision, confirmadosInt, id]
         );
 
@@ -432,7 +432,7 @@ app.post("/admin/invitado/crear", checkAdmin, async (req, res) => {
         }
 
         await runAsync(
-            "INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES ($1, $2, $3, $4, $5, $6)",
+            "INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES (?, ?, ?, ?, ?, ?)",
             [
                 id,
                 nombreLimpio || null,
@@ -459,7 +459,7 @@ app.get("/admin/invitado/editar/:id", checkAdmin, async (req, res) => {
     const id = req.params.id;
 
     try {
-        const invitado = await db.one("SELECT * FROM invitados WHERE id = $1", [id]);
+        const invitado = await db.one("SELECT * FROM invitados WHERE id = ?", [id]);
         if (!invitado) return res.status(404).send("Invitado no encontrado.");
         res.render("admin_editar_invitado", { invitado });
     } catch (error) {
@@ -475,7 +475,7 @@ app.post("/admin/invitado/actualizar/:id", checkAdmin, async (req, res) => {
 
     try {
         await db.query(
-            "UPDATE invitados SET nombre = $1, apellido = $2, cantidad = $3, confirmados = $4, estado = $5 WHERE id = $6",
+            "UPDATE invitados SET nombre = ?, apellido = ?, cantidad = ?, confirmados = ?, estado = ? WHERE id = ?",
             [nombre || null, apellido || null, cantidad, confirmados, estado, id]
         );
         res.redirect("/admin/invitados");
