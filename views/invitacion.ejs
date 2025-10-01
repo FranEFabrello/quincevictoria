@@ -400,6 +400,58 @@
             background-color: #89a8c6;
         }
 
+        .map-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 18px;
+            padding: 13px 28px;
+            border: none;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(112, 160, 200, 0.95), rgba(137, 168, 198, 0.85));
+            color: var(--color-light);
+            font-family: var(--font-text);
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 10px 24px rgba(54, 75, 110, 0.18);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .map-button:hover,
+        .map-button:focus-visible {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, rgba(112, 160, 200, 1), rgba(137, 168, 198, 0.95));
+            box-shadow: 0 14px 26px rgba(54, 75, 110, 0.25);
+            outline: none;
+        }
+
+        .map-button:focus-visible {
+            outline: 3px solid rgba(255, 255, 255, 0.75);
+            outline-offset: 3px;
+        }
+
+        .map-button__icon,
+        .map-button__launch {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05em;
+        }
+
+        .map-note {
+            margin-top: 12px;
+            font-size: 0.95em;
+            color: rgba(47, 61, 92, 0.85);
+        }
+
+        .map-note i {
+            margin-right: 6px;
+            color: rgba(112, 160, 200, 0.9);
+        }
+
         #sticky-tree {
             width: 100%;
             max-width: 900px;
@@ -803,8 +855,13 @@
             <div class="section-content">
                 <h2>Ubicación</h2>
                 <p><strong>Club Citricultores</strong></p>
-                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3445.183410153992!2d-57.67156042473693!3d-30.28883984265238!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95ad2847b19e059b%3A0xb3af2f0a44da8b29!2sClub%20Citricultores!5e0!3m2!1ses!2sar!4v1754266494672!5m2!1ses!2sar"
-                        width="100%" height="320" style="border:0; border-radius:12px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                <button class="map-button" type="button"
+                        onclick="window.open('https://maps.google.com/?q=Club+Citricultores,+Concordia,+Entre+Rios', '_blank', 'noopener')">
+                    <span class="map-button__icon" aria-hidden="true"><i class="fa-solid fa-map-location-dot"></i></span>
+                    Ver ubicación en Google Maps
+                    <span class="map-button__launch" aria-hidden="true"><i class="fa-solid fa-up-right-from-square"></i></span>
+                </button>
+                <p class="map-note"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Se abrirá en una nueva pestaña.</p>
             </div>
         </section>
 
