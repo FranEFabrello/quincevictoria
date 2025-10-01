@@ -258,7 +258,7 @@ app.get("/confirmar/:id", async (req, res) => {
             let mensajeExito;
             if (invitado.estado === "confirmado") {
                 const cantidadConfirmada = invitado.confirmados || 0;
-                mensajeExito = `¡Gracias! Registramos que asistirán ${cantidadConfirmada} persona(s).`;
+                mensajeExito = `¡Gracias! Confirmamos tu asistencia para ${cantidadConfirmada} persona(s).`;
             } else if (invitado.estado === "rechazado") {
                 mensajeExito = "Registramos que no podrán acompañarnos. ¡Gracias por avisarnos!";
             } else {
@@ -268,10 +268,13 @@ app.get("/confirmar/:id", async (req, res) => {
             alerta = { tipo: "exito", mensaje: mensajeExito };
         }
 
+        const mostrarResumen = bloquearFormulario && !alerta;
+
         res.render("invitacion", {
             invitado,
             bloquearFormulario,
-            alerta
+            alerta,
+            mostrarResumen
         });
     } catch (error) {
         console.error("Error al obtener invitado:", error);
@@ -302,13 +305,24 @@ app.post("/confirmar/:id", async (req, res) => {
         }
 
         if (invitado.estado !== "pendiente") {
+            let mensajeInfo;
+            if (invitado.estado === "confirmado") {
+                const cantidadConfirmada = invitado.confirmados || 0;
+                mensajeInfo = `Ya registramos que asistirán ${cantidadConfirmada} persona(s). Si necesitás actualizar algún dato, contactá a los organizadores.`;
+            } else if (invitado.estado === "rechazado") {
+                mensajeInfo = "Ya registramos que no podrán acompañarnos. Si necesitás actualizar algún dato, contactá a los organizadores.";
+            } else {
+                mensajeInfo = "Ya registramos tu respuesta para esta invitación. Si necesitás actualizar algún dato, contactá a los organizadores.";
+            }
+
             return res.status(409).render("invitacion", {
                 invitado,
                 bloquearFormulario: true,
                 alerta: {
                     tipo: "info",
-                    mensaje: "Ya registramos tu respuesta. Si necesitás hacer un cambio, contactá a los organizadores."
-                }
+                    mensaje: mensajeInfo
+                },
+                mostrarResumen: false
             });
         }
 

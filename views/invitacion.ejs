@@ -883,18 +883,18 @@
                         <div class="alert <%= alerta.tipo === 'exito' ? 'alert-success' : 'alert-info' %>"><%= alerta.mensaje %></div>
                     <% } %>
 
-                    <% if (bloquearFormulario) { %>
+                    <% if (mostrarResumen) { %>
                         <div class="respuesta-resumen">
                             <% if (invitado.estado === 'confirmado') { %>
-                                <p><strong>¡Gracias!</strong> Ya registramos que asistirán <strong><%= invitado.confirmados || 0 %></strong> persona(s).</p>
+                                <p>Confirmaste que asistirán <strong><%= invitado.confirmados || 0 %></strong> persona(s).</p>
                             <% } else if (invitado.estado === 'rechazado') { %>
-                                <p>Registramos que no podrán acompañarnos en la celebración.</p>
+                                <p>Registraste que no podrán acompañarnos en la celebración.</p>
                             <% } else { %>
-                                <p>Ya registramos tu respuesta para esta invitación.</p>
+                                <p>Registramos tu respuesta para esta invitación.</p>
                             <% } %>
                             <p class="nota">Si necesitás actualizar algún dato, por favor contactá a los organizadores.</p>
                         </div>
-                    <% } else { %>
+                    <% } else if (!bloquearFormulario) { %>
                         <form action="/confirmar/<%= invitado.id %>" method="POST">
 
                             <div class="form-group decision-buttons">
