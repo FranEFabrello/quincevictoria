@@ -982,7 +982,9 @@
             }
 
             function markLoaded(id) {
-                loaded++; updateProgress();
+                if (loaded >= total) return; // Evita pasar de 100%
+                loaded++;
+                updateProgress();
                 if (loaded >= total) enableAccess();
             }
 
