@@ -17,6 +17,7 @@
         .admin-shell {
             display: flex;
             min-height: 100vh;
+            background: linear-gradient(180deg, rgba(241, 245, 249, 0.9) 0%, rgba(255, 255, 255, 0.6) 40%);
         }
         .admin-sidebar {
             background: #0d1b2a;
@@ -29,6 +30,7 @@
             position: sticky;
             top: 0;
             height: 100vh;
+            box-shadow: 4px 0 24px rgba(13, 27, 42, 0.15);
         }
         .admin-sidebar h1 {
             font-size: 1.5rem;
@@ -62,11 +64,11 @@
             margin-top: auto;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
         .admin-content {
             flex: 1;
-            padding: 32px;
+            padding: 40px 48px;
             display: flex;
             justify-content: center;
         }
@@ -74,9 +76,9 @@
             max-width: 1200px;
             width: 100%;
             background: white;
-            padding: 32px;
+            padding: 40px;
             border-radius: 16px;
-            box-shadow: 0 2px 20px rgba(13, 27, 42, 0.08);
+            box-shadow: 0 12px 40px rgba(13, 27, 42, 0.08);
         }
         .admin-section {
             scroll-margin-top: 32px;
@@ -96,15 +98,15 @@
             to { box-shadow: 0 0 0 rgba(13, 110, 253, 0); }
         }
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: #e9ecef; padding: 20px; border-radius: 8px; text-align: center; }
+        .stat-card { background: #f1f3f5; padding: 24px; border-radius: 12px; text-align: center; border: 1px solid rgba(13, 27, 42, 0.08); box-shadow: 0 10px 30px rgba(13, 27, 42, 0.05); }
         .stat-card h2,
-        .stat-card h3 { margin: 0 0 10px 0; font-size: 1em; color: #555; text-transform: uppercase; }
-        .stat-card p { margin: 0; font-size: 2.2em; font-weight: bold; }
+        .stat-card h3 { margin: 0 0 10px 0; font-size: 0.95em; color: #495057; text-transform: uppercase; letter-spacing: 0.08em; }
+        .stat-card p { margin: 0; font-size: 2.3em; font-weight: 700; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
         th, td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
         th { background-color: #007bff; color: white; }
         tr:nth-child(even) { background-color: #f8f9fa; }
-        .btn, button { padding: 8px 15px; border: none; border-radius: 4px; color: white; cursor: pointer; text-decoration: none; font-size: 14px; display: inline-block; text-align: center; }
+        .btn, button { padding: 10px 18px; border: none; border-radius: 8px; color: white; cursor: pointer; text-decoration: none; font-size: 14px; display: inline-block; text-align: center; font-weight: 600; letter-spacing: 0.02em; }
         .btn-edit { background-color: #ffc107; color: #212529;}
         .btn-new { background-color: #28a745; }
         .btn-logout { background-color: #dc3545; }
@@ -112,23 +114,58 @@
         .btn-delete { background-color: #dc3545; }
         .btn-import { background-color: #6610f2; }
         .btn-download { background-color: #20c997; }
-        .table-container { overflow-x: auto; }
-        .header-controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-        .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-start; }
-        .search-form {
-            display: flex;
+        .btn-outline {
+            background: rgba(13, 27, 42, 0.04);
+            color: #0d1b2a;
+            border: 1px solid rgba(13, 27, 42, 0.2);
+        }
+        .btn-outline:hover,
+        .btn-outline:focus {
+            background: rgba(13, 27, 42, 0.08);
+            color: #0d1b2a;
+        }
+        .btn-icon {
+            display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: #f8f9fa;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid #dee2e6;
+        }
+        .table-container { overflow-x: auto; }
+        .search-form {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            background: none;
+            padding: 0;
+            border: none;
+        }
+        .search-form label {
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #495057;
         }
         .search-form input[type="text"] {
-            padding: 6px 10px;
+            padding: 10px 12px;
             border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .search-form input[type="text"]:focus {
+            border-color: #0d6efd;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.2);
+        }
+        .search-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .search-actions button,
+        .search-actions a {
+            flex: 1 1 auto;
         }
         .status { padding: 5px 10px; border-radius: 4px; color: white; text-align: center; font-weight: bold; }
         .status-confirmado { background-color: #28a745; }
@@ -147,12 +184,9 @@
         }
         .import-form {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #f8f9fa;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid #dee2e6;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
         }
         .import-form input[type="file"] {
             font-size: 13px;
@@ -162,6 +196,119 @@
         .alert-info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
         .download-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
         .tools-actions { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+        }
+        .admin-header h1 {
+            font-size: 2rem;
+            color: #0d1b2a;
+            margin: 0;
+        }
+        .admin-header-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .section-intro {
+            color: #6c757d;
+            margin-top: 0;
+            margin-bottom: 24px;
+            max-width: 720px;
+        }
+        .cards-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+        .card {
+            background: #f8f9fa;
+            border: 1px solid rgba(13, 27, 42, 0.08);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(13, 27, 42, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .card h3 {
+            margin: 0;
+            color: #0d1b2a;
+        }
+        .card p {
+            margin: 0;
+            color: #495057;
+            line-height: 1.5;
+        }
+        .card form {
+            width: 100%;
+        }
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .search-form {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            background: none;
+            padding: 0;
+            border: none;
+        }
+        .search-form label {
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #495057;
+        }
+        .search-form input[type="text"] {
+            padding: 10px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .search-form input[type="text"]:focus {
+            border-color: #0d6efd;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.2);
+        }
+        .search-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .search-actions button,
+        .search-actions a {
+            flex: 1 1 auto;
+        }
+        .download-card .download-actions {
+            margin-top: 0;
+        }
+        .download-card .download-actions a {
+            flex: 1 1 200px;
+        }
+        .tools-card ul {
+            margin: 0;
+            padding-left: 18px;
+            color: #495057;
+        }
+        .tools-card li + li {
+            margin-top: 8px;
+        }
         @media (max-width: 960px) {
             .admin-shell {
                 flex-direction: column;
@@ -171,12 +318,19 @@
                 width: 100%;
                 height: auto;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+                box-shadow: none;
+            }
+            .admin-sidebar .sidebar-actions {
+                margin-top: 0;
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 10px;
             }
             .admin-content {
-                padding: 24px 16px 48px;
+                padding: 32px 20px 56px;
             }
             .container {
-                padding: 24px 20px;
+                padding: 28px 20px;
             }
             .admin-nav {
                 flex-direction: row;
@@ -192,14 +346,23 @@
             .admin-nav a {
                 flex: 1 1 100%;
             }
-            .header-controls { flex-direction: column; align-items: flex-start; gap: 16px; }
-            .header-actions { width: 100%; justify-content: flex-start; }
-            .import-form { width: 100%; flex-wrap: wrap; }
-            .import-form input[type="file"] { flex: 1 1 100%; }
-            .import-form button { width: 100%; }
-            .search-form { width: 100%; flex-wrap: wrap; }
-            .search-form input[type="text"] { flex: 1 1 100%; }
-            .search-form button, .search-form a { width: 100%; text-align: center; }
+            .admin-content {
+                padding: 24px 16px 48px;
+            }
+            .container {
+                padding: 24px 16px;
+            }
+            .search-actions {
+                flex-direction: column;
+            }
+            .admin-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .admin-header-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
         }
     </style>
 </head>
@@ -215,28 +378,53 @@
         </nav>
         <div class="sidebar-actions">
             <a class="btn btn-new" href="/admin/invitado/nuevo">Nuevo invitado</a>
-            <form action="/admin-logout" method="get">
-                <button class="btn-logout">Cerrar Sesión</button>
-            </form>
         </div>
     </aside>
     <main class="admin-content">
         <div class="container">
+            <header class="admin-header">
+                <h1>Panel de invitados</h1>
+                <div class="admin-header-actions">
+                    <a class="btn btn-outline btn-icon" href="/">
+                        <span aria-hidden="true">⟵</span>
+                        Volver al sitio
+                    </a>
+                    <form action="/admin-logout" method="get">
+                        <button class="btn btn-logout btn-icon" type="submit">
+                            <span aria-hidden="true">⎋</span>
+                            Cerrar sesión
+                        </button>
+                    </form>
+                </div>
+            </header>
             <section id="carga" class="admin-section">
-                <div class="header-controls">
-                    <h2>Carga y búsqueda</h2>
-                    <div class="header-actions">
+                <h2>Carga y búsqueda</h2>
+                <p class="section-intro">Encontrá invitados específicos o subí listados completos sin pisar los registros existentes. Cada herramienta está separada para que puedas trabajar con tranquilidad.</p>
+                <div class="cards-grid">
+                    <div class="card">
+                        <h3>Búsqueda rápida</h3>
+                        <p>Filtrá por nombre o apellido para revisar, editar o eliminar una invitación en segundos.</p>
                         <form class="search-form" action="/admin/invitados" method="get">
-                            <label for="buscar" style="font-weight: 600; font-size: 13px;">Buscar</label>
-                            <input id="buscar" type="text" name="q" placeholder="Nombre o apellido" value="<%= termino || '' %>">
-                            <button type="submit" class="btn btn-search">Buscar</button>
-                            <a class="btn btn-secondary" href="/admin/invitados">Limpiar</a>
+                            <label for="buscar">Buscar invitado</label>
+                            <input id="buscar" type="text" name="q" placeholder="Ej: María" value="<%= termino || '' %>">
+                            <div class="search-actions">
+                                <button type="submit" class="btn btn-search">Buscar</button>
+                                <a class="btn btn-secondary" href="/admin/invitados">Limpiar</a>
+                            </div>
                         </form>
+                    </div>
+                    <div class="card">
+                        <h3>Carga masiva</h3>
+                        <p>Importá un archivo XLSX, XLS o CSV. Los datos nuevos se agregan sin sobrescribir la información existente.</p>
                         <form class="import-form" action="/upload" method="post" enctype="multipart/form-data">
-                            <label for="excel" style="font-weight: 600; font-size: 13px;">Importar listado</label>
+                            <label for="excel" class="visually-hidden">Seleccionar archivo</label>
                             <input type="file" id="excel" name="excel" accept=".xlsx,.xls,.csv">
-                            <button type="submit" class="btn btn-import">Importar</button>
+                            <button type="submit" class="btn btn-import btn-icon">
+                                <span aria-hidden="true">⬆</span>
+                                Importar archivo
+                            </button>
                         </form>
+                        <small style="color: #6c757d;">Consejo: descargá un respaldo antes de cargar un archivo nuevo.</small>
                     </div>
                 </div>
 
@@ -255,11 +443,25 @@
 
             <section id="descargas" class="admin-section">
                 <h2>Descargas</h2>
-                <p>Obtén un respaldo actualizado de tus invitados para almacenarlo o consultarlo sin conexión.</p>
-                <div class="download-actions">
-                    <a class="btn btn-backup" href="/admin/backup">Descargar respaldo</a>
-                    <a class="btn btn-download" href="/admin/descargar-links">Descargar links personalizados</a>
-                    <a class="btn btn-secondary" href="/admin/descargar-confirmaciones">Descargar confirmaciones</a>
+                <div class="cards-grid">
+                    <div class="card download-card">
+                        <h3>Respaldos y reportes</h3>
+                        <p>Generá copias actualizadas para trabajar sin conexión o compartir con tu equipo.</p>
+                        <div class="download-actions">
+                            <a class="btn btn-backup btn-icon" href="/admin/backup">
+                                <span aria-hidden="true">💾</span>
+                                Descargar respaldo
+                            </a>
+                            <a class="btn btn-download btn-icon" href="/admin/descargar-links">
+                                <span aria-hidden="true">🔗</span>
+                                Links personalizados
+                            </a>
+                            <a class="btn btn-secondary btn-icon" href="/admin/descargar-confirmaciones">
+                                <span aria-hidden="true">✅</span>
+                                Confirmaciones
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -332,18 +534,26 @@
 
             <section id="herramientas" class="admin-section">
                 <h2>Herramientas adicionales</h2>
-                <p>Administra tus listas con estas acciones rápidas.</p>
-                <% if (mensajeReset) { %>
-                    <div class="alert alert-exito"><%= mensajeReset %></div>
-                <% } %>
-                <ul>
-                    <li><a href="/admin/invitado/nuevo">Agregar una nueva invitación</a></li>
-                    <li><a href="/admin/invitados">Volver al listado completo</a></li>
-                </ul>
-                <div class="tools-actions">
-                    <form action="/admin/borrar-todo" method="post" onsubmit="return confirm('¿Seguro que querés borrar todos los datos? Esta acción no se puede deshacer.');">
-                        <button type="submit" class="btn btn-delete">Borrar todos los invitados</button>
-                    </form>
+                <div class="cards-grid">
+                    <div class="card tools-card">
+                        <h3>Accesos rápidos</h3>
+                        <p>Mantené tu listado actualizado y limpio con estas acciones frecuentes.</p>
+                        <% if (mensajeReset) { %>
+                            <div class="alert alert-exito"><%= mensajeReset %></div>
+                        <% } %>
+                        <ul>
+                            <li><a href="/admin/invitado/nuevo">Agregar una nueva invitación</a></li>
+                            <li><a href="/admin/invitados">Ver listado completo</a></li>
+                        </ul>
+                        <div class="tools-actions">
+                            <form action="/admin/borrar-todo" method="post" onsubmit="return confirm('¿Seguro que querés borrar todos los datos? Esta acción no se puede deshacer.');">
+                                <button type="submit" class="btn btn-delete btn-icon">
+                                    <span aria-hidden="true">🗑</span>
+                                    Borrar todos los invitados
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </section>
         </div>
