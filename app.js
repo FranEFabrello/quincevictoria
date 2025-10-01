@@ -135,7 +135,7 @@ app.get("/admin", checkAdmin, (req, res) => {
 
 app.get("/admin/backup", checkAdmin, async (req, res) => {
     try {
-        const { rows } = await db.query("SELECT * FROM invitados ORDER BY nombre");
+        const rows = await db.query("SELECT * FROM invitados ORDER BY nombre");
 
         await fsp.mkdir(path.join(__dirname, "backups"), { recursive: true });
 
