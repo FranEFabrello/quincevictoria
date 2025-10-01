@@ -26,6 +26,21 @@
         .table-container { overflow-x: auto; }
         .header-controls { display: flex; justify-content: space-between; align-items: center; }
         .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+        .search-form {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        .search-form input[type="text"] {
+            padding: 6px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
         /* Estilos para el estado en la tabla */
         .status { padding: 5px 10px; border-radius: 4px; color: white; text-align: center; font-weight: bold; }
         .status-confirmado { background-color: #28a745; }
@@ -54,12 +69,18 @@
         .import-form input[type="file"] {
             font-size: 13px;
         }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-search { background-color: #007bff; }
+        .alert-info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
         @media (max-width: 600px) {
             .header-controls { flex-direction: column; align-items: flex-start; gap: 16px; }
             .header-actions { width: 100%; justify-content: flex-start; }
             .import-form { width: 100%; flex-wrap: wrap; }
             .import-form input[type="file"] { flex: 1 1 100%; }
             .import-form button { width: 100%; }
+            .search-form { width: 100%; flex-wrap: wrap; }
+            .search-form input[type="text"] { flex: 1 1 100%; }
+            .search-form button, .search-form a { width: 100%; text-align: center; }
         }
     </style>
 </head>
@@ -68,6 +89,12 @@
     <div class="header-controls">
         <h1>Panel de Invitados</h1>
         <div class="header-actions">
+            <form class="search-form" action="/admin/invitados" method="get">
+                <label for="buscar" style="font-weight: 600; font-size: 13px;">Buscar</label>
+                <input id="buscar" type="text" name="q" placeholder="Nombre o apellido" value="<%= termino || '' %>">
+                <button type="submit" class="btn btn-search">Buscar</button>
+                <a class="btn btn-secondary" href="/admin/invitados">Limpiar</a>
+            </form>
             <form class="import-form" action="/upload" method="post" enctype="multipart/form-data">
                 <label for="excel" style="font-weight: 600; font-size: 13px;">Importar listado</label>
                 <input type="file" id="excel" name="excel" accept=".xlsx,.xls,.csv">
@@ -87,6 +114,10 @@
 
     <% if (mensajeExito) { %>
         <div class="alert alert-exito"><%= mensajeExito %></div>
+    <% } %>
+
+    <% if (termino && invitados.length === 0) { %>
+        <div class="alert alert-info">No se encontraron invitados que coincidan con "<%= termino %>".</div>
     <% } %>
 
     <div class="stats">

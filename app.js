@@ -358,13 +358,25 @@ app.get("/gracias", (req, res) => {
 // RUTA DEL LISTADO DE INVITADOS MODIFICADA
 app.get("/admin/invitados", checkAdmin, async (req, res) => {
     try {
-        const invitados = await db.many("SELECT * FROM invitados ORDER BY nombre");
+        const q = req.query.q;
+        const termino = q?.trim();
+
+        let invitados;
+        if (termino) {
+            const likeTerm = `%${termino}%`;
+            invitados = await db.many(
+                "SELECT * FROM invitados WHERE nombre LIKE ? OR apellido LIKE ? ORDER BY nombre",
+                [likeTerm, likeTerm]
+            );
+        } else {
+            invitados = await db.many("SELECT * FROM invitados ORDER BY nombre");
+        }
 
         let totalInvitados = 0;
         let confirmados = 0;
         invitados.forEach(r => {
-            totalInvitados += r.cantidad;
-            confirmados += r.confirmados;
+            totalInvitados += Number(r.cantidad) || 0;
+            confirmados += Number(r.confirmados) || 0;
         });
         const pendientes = invitados.filter(r => r.estado === "pendiente").length;
         const rechazados = invitados.filter(r => r.estado === "rechazado").length;
@@ -398,7 +410,8 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
             rechazados,
             baseUrl,
             mensajeExito,
-            mensajeImportacion
+            mensajeImportacion,
+            termino
         });
     } catch (error) {
         console.error("Error al obtener invitados:", error);
