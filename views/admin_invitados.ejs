@@ -23,7 +23,7 @@
             background: #0d1b2a;
             color: #fff;
             padding: 32px 24px;
-            width: 260px;
+            width: 280px;
             display: flex;
             flex-direction: column;
             gap: 24px;
@@ -34,23 +34,52 @@
             box-sizing: border-box;
             box-shadow: 4px 0 24px rgba(13, 27, 42, 0.15);
         }
-        .admin-sidebar h1 {
+        .sidebar-header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .sidebar-header h1 {
             font-size: 1.5rem;
             margin: 0;
             color: #fff;
         }
+        .sidebar-description {
+            margin: 0;
+            color: rgba(207, 224, 255, 0.8);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
         .admin-nav {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 20px;
+        }
+        .sidebar-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sidebar-group-title {
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.75rem;
+            color: rgba(207, 224, 255, 0.65);
+            margin: 0;
+        }
+        .sidebar-group-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         .admin-nav a {
             color: #cfe0ff;
             text-decoration: none;
             font-weight: 600;
             padding: 10px 14px;
-            border-radius: 6px;
+            border-radius: 8px;
             transition: background 0.2s ease, color 0.2s ease;
+            display: block;
         }
         .admin-nav a:hover,
         .admin-nav a:focus {
@@ -62,11 +91,27 @@
             background: #1b263b;
             color: #fff;
         }
+        .sidebar-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.16);
+            margin: 12px 0;
+        }
         .admin-sidebar .sidebar-actions {
             margin-top: auto;
             display: flex;
             flex-direction: column;
             gap: 12px;
+        }
+        .sidebar-actions-title {
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.75rem;
+            color: rgba(207, 224, 255, 0.65);
+            margin: 0;
+        }
+        .sidebar-actions .btn {
+            width: 100%;
+            justify-content: center;
         }
         .admin-content {
             flex: 1;
@@ -244,6 +289,10 @@
             flex-direction: column;
             gap: 16px;
         }
+        .card.is-active {
+            border-color: rgba(13, 110, 253, 0.35);
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+        }
         .card h3 {
             margin: 0;
             color: #0d1b2a;
@@ -334,9 +383,8 @@
                 box-shadow: none;
             }
             .admin-sidebar .sidebar-actions {
-                margin-top: 0;
-                flex-direction: row;
-                flex-wrap: wrap;
+                margin-top: 24px;
+                flex-direction: column;
                 gap: 10px;
             }
             .admin-content {
@@ -345,19 +393,19 @@
             .container {
                 padding: 28px 20px;
             }
-            .admin-nav {
+            .sidebar-group-links {
                 flex-direction: row;
                 flex-wrap: wrap;
                 gap: 8px;
             }
             .admin-nav a {
-                flex: 1 1 45%;
-                text-align: center;
+                flex: 1 1 calc(50% - 8px);
+                text-align: left;
             }
         }
         @media (max-width: 600px) {
-            .admin-nav a {
-                flex: 1 1 100%;
+            .sidebar-group-links {
+                flex-direction: column;
             }
             .admin-content {
                 padding: 24px 16px 48px;
@@ -382,15 +430,44 @@
 <body>
 <div class="admin-shell">
     <aside class="admin-sidebar">
-        <h1>Panel de Invitados</h1>
-        <nav class="admin-nav">
-            <a href="#carga" class="is-active">Carga</a>
-            <a href="#descargas">Descargas</a>
-            <a href="#invitados">Invitados</a>
-            <a href="#herramientas">Herramientas</a>
+        <div class="sidebar-header">
+            <h1>Panel de Invitados</h1>
+            <p class="sidebar-description">Administrá la lista con accesos rápidos agrupados por tarea. Elegí qué querés hacer y te llevamos directo a esa sección.</p>
+        </div>
+        <nav class="admin-nav" aria-label="Navegación del panel">
+            <div class="sidebar-group">
+                <p class="sidebar-group-title">Gestión de invitados</p>
+                <div class="sidebar-group-links">
+                    <a href="#filtros" class="is-active" data-section="#carga" data-scroll-target="#filtros">Búsqueda y filtros</a>
+                    <a href="#carga-masiva" data-section="#carga" data-scroll-target="#carga-masiva">Carga masiva</a>
+                    <a href="#invitados">Resumen general</a>
+                </div>
+            </div>
+            <div class="sidebar-group">
+                <p class="sidebar-group-title">Reportes y respaldos</p>
+                <div class="sidebar-group-links">
+                    <a href="#descargas">Descargas</a>
+                </div>
+            </div>
+            <div class="sidebar-group">
+                <p class="sidebar-group-title">Herramientas</p>
+                <div class="sidebar-group-links">
+                    <a href="#herramientas">Accesos rápidos</a>
+                    <a href="#borrar-datos" data-section="#herramientas" data-scroll-target="#borrar-datos">Borrar invitados</a>
+                </div>
+            </div>
         </nav>
+        <div class="sidebar-divider" aria-hidden="true"></div>
         <div class="sidebar-actions">
-            <a class="btn btn-new" href="/admin/invitado/nuevo">Nuevo invitado</a>
+            <p class="sidebar-actions-title">Acciones rápidas</p>
+            <a class="btn btn-new btn-icon" href="/admin/invitado/nuevo">
+                <span aria-hidden="true">＋</span>
+                Nuevo invitado
+            </a>
+            <a class="btn btn-outline btn-icon" href="#invitados">
+                <span aria-hidden="true">📋</span>
+                Ver listado
+            </a>
         </div>
     </aside>
     <main class="admin-content">
@@ -414,7 +491,7 @@
                 <h2>Carga y búsqueda</h2>
                 <p class="section-intro">Encontrá invitados específicos o subí listados completos sin pisar los registros existentes. Cada herramienta está separada para que puedas trabajar con tranquilidad.</p>
                 <div class="cards-grid">
-                    <div class="card">
+                    <article id="filtros" class="card" data-card-anchor>
                         <h3>Búsqueda rápida</h3>
                         <p>Filtrá por nombre o apellido para revisar, editar o eliminar una invitación en segundos.</p>
                         <form class="search-form" data-search-form action="/admin/invitados" method="get">
@@ -432,8 +509,8 @@
                                 <a class="btn btn-secondary" href="/admin/invitados" data-action="clear">Limpiar</a>
                             </div>
                         </form>
-                    </div>
-                    <div class="card">
+                    </article>
+                    <article id="carga-masiva" class="card" data-card-anchor>
                         <h3>Carga masiva</h3>
                         <p>Importá un archivo XLSX, XLS o CSV. Los datos nuevos se agregan sin sobrescribir la información existente.</p>
                         <form class="import-form" action="/upload" method="post" enctype="multipart/form-data">
@@ -445,7 +522,7 @@
                             </button>
                         </form>
                         <small style="color: #6c757d;">Consejo: descargá un respaldo antes de cargar un archivo nuevo.</small>
-                    </div>
+                    </article>
                 </div>
 
                 <div class="alert-stack" data-alert-container aria-live="polite" aria-atomic="true">
@@ -548,8 +625,9 @@
 
             <section id="herramientas" class="admin-section">
                 <h2>Herramientas adicionales</h2>
+                <p class="section-intro">Atajos para mantener la base ordenada y realizar tareas de mantenimiento cuando sea necesario.</p>
                 <div class="cards-grid">
-                    <div class="card tools-card">
+                    <article id="herramientas-accesos" class="card tools-card" data-card-anchor>
                         <h3>Accesos rápidos</h3>
                         <p>Mantené tu listado actualizado y limpio con estas acciones frecuentes.</p>
                         <% if (mensajeReset) { %>
@@ -559,6 +637,10 @@
                             <li><a href="/admin/invitado/nuevo">Agregar una nueva invitación</a></li>
                             <li><a href="/admin/invitados">Ver listado completo</a></li>
                         </ul>
+                    </article>
+                    <article id="borrar-datos" class="card tools-card" data-card-anchor>
+                        <h3>Mantenimiento de datos</h3>
+                        <p>Cuando necesites reiniciar la lista, podés borrar todos los registros de manera segura. Descargá un respaldo antes de continuar.</p>
                         <div class="tools-actions">
                             <form action="/admin/borrar-todo" method="post" onsubmit="return confirm('¿Seguro que querés borrar todos los datos? Esta acción no se puede deshacer.');">
                                 <button type="submit" class="btn btn-delete btn-icon">
@@ -567,7 +649,7 @@
                                 </button>
                             </form>
                         </div>
-                    </div>
+                    </article>
                 </div>
             </section>
         </div>
@@ -577,20 +659,44 @@
     document.addEventListener('DOMContentLoaded', () => {
         const navLinks = Array.from(document.querySelectorAll('.admin-nav a'));
         const sections = Array.from(document.querySelectorAll('.admin-section'));
+        const anchorCards = Array.from(document.querySelectorAll('[data-card-anchor]'));
+
+        const getTargetHash = (link) => link.dataset.scrollTarget || link.getAttribute('href');
+        const getSectionHash = (link) => link.dataset.section || getTargetHash(link);
+        const resolveLink = (hash) => navLinks.find(link => getTargetHash(link) === hash);
 
         const activate = (hash) => {
-            const currentHash = hash || '#carga';
+            const fallbackHash = navLinks.length ? getTargetHash(navLinks[0]) : '#carga';
+            const normalizedHash = hash && hash.startsWith('#') ? hash : fallbackHash;
+            const activeLink = resolveLink(normalizedHash) || navLinks[0];
+
             navLinks.forEach(link => {
-                link.classList.toggle('is-active', link.getAttribute('href') === currentHash);
+                link.classList.toggle('is-active', link === activeLink);
             });
+
+            const sectionHash = getSectionHash(activeLink);
             sections.forEach(section => {
-                section.classList.toggle('is-active', `#${section.id}` === currentHash);
+                section.classList.toggle('is-active', `#${section.id}` === sectionHash);
+            });
+
+            const cardHash = getTargetHash(activeLink);
+            anchorCards.forEach(card => {
+                card.classList.toggle('is-active', `#${card.id}` === cardHash);
             });
         };
 
         navLinks.forEach(link => {
             link.addEventListener('click', (event) => {
-                activate(event.currentTarget.getAttribute('href'));
+                const targetHash = getTargetHash(link);
+                if (targetHash && targetHash.startsWith('#')) {
+                    event.preventDefault();
+                    const targetElement = document.querySelector(targetHash);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                    history.replaceState(null, '', targetHash);
+                    activate(targetHash);
+                }
             });
         });
 
