@@ -21,6 +21,7 @@
         .btn-new { background-color: #28a745; }
         .btn-logout { background-color: #dc3545; float: right;}
         .btn-backup { background-color: #17a2b8; margin-right: 10px; }
+        .btn-delete { background-color: #dc3545; }
         .table-container { overflow-x: auto; }
         .header-controls { display: flex; justify-content: space-between; align-items: center; }
         .header-actions { display: flex; align-items: center; gap: 10px; }
@@ -31,6 +32,20 @@
         .status-rechazado { background-color: #dc3545; }
         .link-cell { word-break: break-all; font-size: 12px; }
         .link-cell a { color: #007bff; }
+        .alert {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -45,6 +60,10 @@
             </form>
         </div>
     </div>
+
+    <% if (mensajeExito) { %>
+        <div class="alert"><%= mensajeExito %></div>
+    <% } %>
 
     <div class="stats">
         <div class="stat-card">
@@ -97,7 +116,12 @@
                         <a target="_blank" href="<%= baseUrl %>/confirmar/<%= invitado.id %>"><%= baseUrl %>/confirmar/<%= invitado.id %></a>
                     </td>
                     <td>
-                        <a href="/admin/invitado/editar/<%= invitado.id %>" class="btn btn-edit">Editar</a>
+                        <div class="action-buttons">
+                            <a href="/admin/invitado/editar/<%= invitado.id %>" class="btn btn-edit">Editar</a>
+                            <form action="/admin/invitado/eliminar/<%= invitado.id %>" method="POST" onsubmit="return confirm('¿Seguro que querés eliminar a <%= invitado.nombre %> <%= invitado.apellido || '' %>? Esta acción no se puede deshacer.');">
+                                <button type="submit" class="btn btn-delete">Eliminar</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             <% }); %>
