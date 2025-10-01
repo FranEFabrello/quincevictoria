@@ -487,10 +487,29 @@ app.post("/admin/invitado/actualizar/:id", checkAdmin, async (req, res) => {
     const id = req.params.id;
     const { nombre, apellido, cantidad, confirmados, estado } = req.body;
 
+    const cantidadNumero = parseInt(cantidad, 10);
+    const confirmadosNumero = parseInt(confirmados, 10);
+
+    const cantidadNormalizada = Number.isNaN(cantidadNumero) ? 0 : cantidadNumero;
+    let confirmadosNormalizados = Number.isNaN(confirmadosNumero) ? 0 : confirmadosNumero;
+
+    if (estado !== "confirmado") {
+        confirmadosNormalizados = 0;
+    } else if (confirmadosNormalizados > cantidadNormalizada) {
+        confirmadosNormalizados = cantidadNormalizada;
+    }
+
     try {
         await db.query(
             "UPDATE invitados SET nombre = ?, apellido = ?, cantidad = ?, confirmados = ?, estado = ? WHERE id = ?",
-            [nombre || null, apellido || null, cantidad, confirmados, estado, id]
+            [
+                nombre || null,
+                apellido || null,
+                cantidadNormalizada,
+                confirmadosNormalizados,
+                estado,
+                id
+            ]
         );
         res.redirect("/admin/invitados");
     } catch (error) {
