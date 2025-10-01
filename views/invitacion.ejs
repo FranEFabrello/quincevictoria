@@ -993,6 +993,35 @@
 
                             <button type="submit">Enviar Confirmación</button>
                         </form>
+                        <script>
+                            (function() {
+                                const cantidadGroup = document.getElementById('cantidad-group');
+                                const cantidadSelect = document.getElementById('cantidad');
+                                const decisionRadios = Array.from(document.querySelectorAll('input[name="decision"]'));
+
+                                function applyToggle(shouldShow) {
+                                    if (!cantidadGroup || !cantidadSelect) {
+                                        return;
+                                    }
+                                    const mostrar = Boolean(shouldShow);
+                                    cantidadGroup.hidden = !mostrar;
+                                    cantidadSelect.disabled = !mostrar;
+                                    cantidadSelect.required = mostrar;
+                                    if (!mostrar) {
+                                        cantidadSelect.value = '';
+                                    } else if (!cantidadSelect.value && cantidadSelect.options.length) {
+                                        cantidadSelect.value = cantidadSelect.options[0].value;
+                                    }
+                                }
+
+                                window.toggleCantidad = function(shouldShow) {
+                                    applyToggle(shouldShow);
+                                };
+
+                                const seleccionInicial = decisionRadios.find(radio => radio.checked)?.value;
+                                applyToggle(seleccionInicial !== 'rechazado');
+                            })();
+                        </script>
                     <% } %>
                 </div>
             </section>

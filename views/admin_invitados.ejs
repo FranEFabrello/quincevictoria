@@ -186,6 +186,11 @@
             flex-wrap: wrap;
             align-items: center;
         }
+        .alert-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
         .import-form {
             display: flex;
             flex-direction: column;
@@ -270,6 +275,10 @@
             background: none;
             padding: 0;
             border: none;
+        }
+        .search-form.is-loading {
+            opacity: 0.6;
+            pointer-events: none;
         }
         .search-form label {
             font-weight: 600;
@@ -408,7 +417,7 @@
                     <div class="card">
                         <h3>Búsqueda rápida</h3>
                         <p>Filtrá por nombre o apellido para revisar, editar o eliminar una invitación en segundos.</p>
-                        <form class="search-form" action="/admin/invitados" method="get">
+                        <form class="search-form" data-search-form action="/admin/invitados" method="get">
                             <label for="buscar">Buscar invitado</label>
                             <input id="buscar" type="text" name="q" placeholder="Ej: María" value="<%= termino || '' %>">
                             <label for="estado">Estado</label>
@@ -420,7 +429,7 @@
                             </select>
                             <div class="search-actions">
                                 <button type="submit" class="btn btn-search">Buscar</button>
-                                <a class="btn btn-secondary" href="/admin/invitados">Limpiar</a>
+                                <a class="btn btn-secondary" href="/admin/invitados" data-action="clear">Limpiar</a>
                             </div>
                         </form>
                     </div>
@@ -439,17 +448,11 @@
                     </div>
                 </div>
 
-                <% if (mensajeImportacion) { %>
-                    <div class="alert alert-<%= mensajeImportacion.tipo %>"><%= mensajeImportacion.texto %></div>
-                <% } %>
-
-                <% if (mensajeExito) { %>
-                    <div class="alert alert-exito"><%= mensajeExito %></div>
-                <% } %>
-
-                <% if (termino && invitados.length === 0) { %>
-                    <div class="alert alert-info">No se encontraron invitados que coincidan con "<%= termino %>".</div>
-                <% } %>
+                <div class="alert-stack" data-alert-container aria-live="polite" aria-atomic="true">
+                    <% (alerts || []).forEach(alerta => { %>
+                        <div class="alert alert-<%= alerta.tipo %>"><%= alerta.texto %></div>
+                    <% }); %>
+                </div>
             </section>
 
             <section id="descargas" class="admin-section">
@@ -481,23 +484,23 @@
                 <div class="stats">
                     <div class="stat-card">
                         <h3>Invitaciones (Grupos)</h3>
-                        <p style="color: #17a2b8;"><%= invitados.length %></p>
+                        <p style="color: #17a2b8;" data-stat="grupos"><%= invitados.length %></p>
                     </div>
                     <div class="stat-card">
                         <h3>Invitados (Personas)</h3>
-                        <p style="color: #007bff;"><%= totalInvitados %></p>
+                        <p style="color: #007bff;" data-stat="personas"><%= totalInvitados %></p>
                     </div>
                     <div class="stat-card">
                         <h3>Asistentes (Personas)</h3>
-                        <p style="color: #28a745;"><%= confirmados %></p>
+                        <p style="color: #28a745;" data-stat="confirmados"><%= confirmados %></p>
                     </div>
                     <div class="stat-card">
                         <h3>Pendientes (Invitaciones)</h3>
-                        <p style="color: #6c757d;"><%= pendientes %></p>
+                        <p style="color: #6c757d;" data-stat="pendientes"><%= pendientes %></p>
                     </div>
                     <div class="stat-card">
                         <h3>Rechazados (Invitaciones)</h3>
-                        <p style="color: #dc3545;"><%= rechazados %></p>
+                        <p style="color: #dc3545;" data-stat="rechazados"><%= rechazados %></p>
                     </div>
                 </div>
                 <div class="table-container">
@@ -513,7 +516,7 @@
                             <th>Acciones</th>
                         </tr>
                         </thead>
-                        <tbody>
+                        <tbody data-table-body>
                         <% invitados.forEach(invitado => { %>
                             <tr>
                                 <td><%= invitado.nombre %></td>
@@ -531,7 +534,7 @@
                                 <td>
                                     <div class="action-buttons">
                                         <a href="/admin/invitado/editar/<%= invitado.id %>" class="btn btn-edit">Editar</a>
-                                        <form action="/admin/invitado/eliminar/<%= invitado.id %>" method="POST" onsubmit="return confirm('¿Seguro que quers eliminar a <%= invitado.nombre %> <%= invitado.apellido || '' %>? Esta acción no se puede deshacer.');">
+                                        <form action="/admin/invitado/eliminar/<%= invitado.id %>" method="POST" data-ajax-delete data-invitado-id="<%= invitado.id %>" data-invitado-nombre="<%= [invitado.nombre, invitado.apellido || ''].filter(Boolean).join(' ') %>">
                                             <button type="submit" class="btn btn-delete">Eliminar</button>
                                         </form>
                                     </div>
@@ -593,6 +596,290 @@
 
         activate(window.location.hash);
         window.addEventListener('hashchange', () => activate(window.location.hash));
+
+        const searchForm = document.querySelector('[data-search-form]');
+        const tableBody = document.querySelector('[data-table-body]');
+        const alertContainer = document.querySelector('[data-alert-container]');
+        const submitButton = searchForm ? searchForm.querySelector('button[type="submit"]') : null;
+        const clearButton = searchForm ? searchForm.querySelector('[data-action="clear"]') : null;
+        const inputBuscar = searchForm ? searchForm.querySelector('input[name="q"]') : null;
+        const selectEstado = searchForm ? searchForm.querySelector('select[name="estado"]') : null;
+        const statElements = {
+            grupos: document.querySelector('[data-stat="grupos"]'),
+            personas: document.querySelector('[data-stat="personas"]'),
+            confirmados: document.querySelector('[data-stat="confirmados"]'),
+            pendientes: document.querySelector('[data-stat="pendientes"]'),
+            rechazados: document.querySelector('[data-stat="rechazados"]')
+        };
+
+        if (!searchForm || !tableBody) {
+            return;
+        }
+
+        const initialState = <%- JSON.stringify({
+            termino: termino || "",
+            estadoSeleccionado,
+            baseUrl,
+            invitados,
+            stats: {
+                totalGrupos: invitados.length,
+                totalPersonas: totalInvitados,
+                confirmados,
+                pendientes,
+                rechazados
+            },
+            alerts: typeof alerts !== 'undefined' ? alerts : []
+        }) %>;
+
+        const state = {
+            filters: {
+                termino: initialState.termino || "",
+                estado: initialState.estadoSeleccionado || "todos"
+            },
+            baseUrl: initialState.baseUrl || window.location.origin
+        };
+
+        function setLoading(isLoading) {
+            searchForm.classList.toggle('is-loading', Boolean(isLoading));
+            if (submitButton) {
+                submitButton.disabled = Boolean(isLoading);
+                submitButton.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+            }
+            if (clearButton) {
+                clearButton.setAttribute('aria-disabled', isLoading ? 'true' : 'false');
+            }
+        }
+
+        function renderAlerts(list) {
+            if (!alertContainer) return;
+            alertContainer.innerHTML = '';
+            if (!Array.isArray(list) || list.length === 0) return;
+            const fragment = document.createDocumentFragment();
+            list.forEach((item) => {
+                const div = document.createElement('div');
+                div.className = `alert alert-${item.tipo || 'info'}`;
+                div.textContent = item.texto || '';
+                fragment.appendChild(div);
+            });
+            alertContainer.appendChild(fragment);
+        }
+
+        function renderStats(stats) {
+            if (!stats) return;
+            if (statElements.grupos) statElements.grupos.textContent = stats.totalGrupos ?? 0;
+            if (statElements.personas) statElements.personas.textContent = stats.totalPersonas ?? 0;
+            if (statElements.confirmados) statElements.confirmados.textContent = stats.confirmados ?? 0;
+            if (statElements.pendientes) statElements.pendientes.textContent = stats.pendientes ?? 0;
+            if (statElements.rechazados) statElements.rechazados.textContent = stats.rechazados ?? 0;
+        }
+
+        function updateFormFields(filters) {
+            if (inputBuscar) inputBuscar.value = filters.termino || '';
+            if (selectEstado) selectEstado.value = filters.estado || 'todos';
+        }
+
+        function buildSearchParams(filters) {
+            const params = new URLSearchParams();
+            const termino = (filters?.termino || '').trim();
+            const estado = (filters?.estado || 'todos').trim();
+            if (termino) params.set('q', termino);
+            if (estado && estado !== 'todos') params.set('estado', estado);
+            return params;
+        }
+
+        async function loadInvitados(filters, options = {}) {
+            const { extraAlerts = [], updateUrl = true } = options;
+            const params = buildSearchParams(filters);
+            const queryString = params.toString();
+            const requestUrl = queryString ? `${searchForm.action}?${queryString}` : searchForm.action;
+            setLoading(true);
+            try {
+                const response = await fetch(requestUrl, { headers: { Accept: 'application/json' } });
+                const expectsJson = response.headers.get('content-type')?.includes('application/json');
+                const data = expectsJson ? await response.json() : null;
+                if (!response.ok || !data?.ok) {
+                    throw new Error(data?.error || 'No se pudo actualizar el listado.');
+                }
+
+                state.filters = {
+                    termino: data.termino ?? '',
+                    estado: data.estadoSeleccionado ?? 'todos'
+                };
+                state.baseUrl = data.baseUrl || state.baseUrl;
+
+                updateFormFields(state.filters);
+                renderStats(data.stats);
+                renderTable(data.invitados, state.baseUrl);
+
+                const combinedAlerts = [...extraAlerts, ...(data.alerts || [])];
+                renderAlerts(combinedAlerts);
+
+                if (updateUrl) {
+                    const newQuery = buildSearchParams(state.filters).toString();
+                    const newUrl = newQuery ? `${window.location.pathname}?${newQuery}` : window.location.pathname;
+                    window.history.replaceState({}, '', newUrl);
+                }
+            } catch (error) {
+                renderAlerts([{ tipo: 'error', texto: error.message || 'No se pudo actualizar el listado.' }]);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function wireDeleteHandlers() {
+            const forms = tableBody.querySelectorAll('form[data-ajax-delete]');
+            forms.forEach((form) => {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const nombreInvitado = form.getAttribute('data-invitado-nombre') || 'este invitado';
+                    const confirmado = window.confirm(`¿Seguro que querés eliminar a ${nombreInvitado}? Esta acción no se puede deshacer.`);
+                    if (!confirmado) return;
+
+                    const submit = form.querySelector('button[type="submit"]');
+                    if (submit) {
+                        submit.disabled = true;
+                    }
+
+                    try {
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            headers: { Accept: 'application/json' }
+                        });
+                        const expectsJson = response.headers.get('content-type')?.includes('application/json');
+                        const result = expectsJson ? await response.json() : null;
+                        if (!response.ok || !result?.ok) {
+                            throw new Error(result?.error || 'No se pudo eliminar el invitado.');
+                        }
+
+                        await loadInvitados(state.filters, {
+                            extraAlerts: [{ tipo: 'exito', texto: result.message || 'Invitado eliminado correctamente.' }],
+                            updateUrl: false
+                        });
+                    } catch (error) {
+                        renderAlerts([{ tipo: 'error', texto: error.message || 'No se pudo eliminar el invitado.' }]);
+                    } finally {
+                        if (submit) {
+                            submit.disabled = false;
+                        }
+                    }
+                });
+            });
+        }
+
+        function renderTable(invitadosLista, baseUrlValue) {
+            tableBody.innerHTML = '';
+            const safeBaseUrl = (baseUrlValue || '').replace(/\/$/, '');
+
+            if (!Array.isArray(invitadosLista) || invitadosLista.length === 0) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = 7;
+                td.style.textAlign = 'center';
+                const terminoActual = state.filters.termino;
+                td.textContent = terminoActual
+                    ? `No se encontraron invitados que coincidan con "${terminoActual}".`
+                    : 'No hay invitados para mostrar con los filtros seleccionados.';
+                tr.appendChild(td);
+                tableBody.appendChild(tr);
+                return;
+            }
+
+            invitadosLista.forEach((invitado) => {
+                const tr = document.createElement('tr');
+
+                const nombreTd = document.createElement('td');
+                nombreTd.textContent = invitado.nombre || '';
+                tr.appendChild(nombreTd);
+
+                const apellidoTd = document.createElement('td');
+                apellidoTd.textContent = invitado.apellido || '-';
+                tr.appendChild(apellidoTd);
+
+                const cantidadTd = document.createElement('td');
+                cantidadTd.textContent = invitado.cantidad ?? '';
+                tr.appendChild(cantidadTd);
+
+                const confirmadosTd = document.createElement('td');
+                confirmadosTd.textContent = invitado.confirmados ?? 0;
+                tr.appendChild(confirmadosTd);
+
+                const estadoTd = document.createElement('td');
+                const estadoSpan = document.createElement('span');
+                const estadoValor = (invitado.estado || '').toLowerCase();
+                estadoSpan.className = `status status-${estadoValor}`;
+                estadoSpan.textContent = invitado.estado ? invitado.estado.charAt(0).toUpperCase() + invitado.estado.slice(1) : '-';
+                estadoTd.appendChild(estadoSpan);
+                tr.appendChild(estadoTd);
+
+                const linkTd = document.createElement('td');
+                linkTd.className = 'link-cell';
+                const enlace = document.createElement('a');
+                enlace.target = '_blank';
+                enlace.rel = 'noopener noreferrer';
+                enlace.href = `${safeBaseUrl}/confirmar/${invitado.id}`;
+                enlace.textContent = `${safeBaseUrl}/confirmar/${invitado.id}`;
+                linkTd.appendChild(enlace);
+                tr.appendChild(linkTd);
+
+                const accionesTd = document.createElement('td');
+                const accionesDiv = document.createElement('div');
+                accionesDiv.className = 'action-buttons';
+
+                const editar = document.createElement('a');
+                editar.href = `/admin/invitado/editar/${invitado.id}`;
+                editar.className = 'btn btn-edit';
+                editar.textContent = 'Editar';
+                accionesDiv.appendChild(editar);
+
+                const eliminarForm = document.createElement('form');
+                eliminarForm.method = 'POST';
+                eliminarForm.action = `/admin/invitado/eliminar/${invitado.id}`;
+                eliminarForm.setAttribute('data-ajax-delete', '');
+                eliminarForm.setAttribute('data-invitado-id', invitado.id);
+                const nombreCompleto = [invitado.nombre, invitado.apellido].filter(Boolean).join(' ').trim();
+                if (nombreCompleto) {
+                    eliminarForm.setAttribute('data-invitado-nombre', nombreCompleto);
+                }
+
+                const eliminarBtn = document.createElement('button');
+                eliminarBtn.type = 'submit';
+                eliminarBtn.className = 'btn btn-delete';
+                eliminarBtn.textContent = 'Eliminar';
+                eliminarForm.appendChild(eliminarBtn);
+
+                accionesDiv.appendChild(eliminarForm);
+                accionesTd.appendChild(accionesDiv);
+                tr.appendChild(accionesTd);
+
+                tableBody.appendChild(tr);
+            });
+
+            wireDeleteHandlers();
+        }
+
+        updateFormFields(state.filters);
+        renderStats(initialState.stats);
+        renderTable(initialState.invitados, state.baseUrl);
+        renderAlerts(initialState.alerts || []);
+
+        searchForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const filtros = {
+                termino: inputBuscar ? inputBuscar.value.trim() : '',
+                estado: selectEstado ? selectEstado.value : 'todos'
+            };
+            state.filters = filtros;
+            loadInvitados(filtros);
+        });
+
+        if (clearButton) {
+            clearButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                state.filters = { termino: '', estado: 'todos' };
+                updateFormFields(state.filters);
+                loadInvitados(state.filters);
+            });
+        }
     });
 </script>
 </body>

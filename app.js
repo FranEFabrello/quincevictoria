@@ -49,6 +49,11 @@ function checkAdmin(req, res, next) {
     res.redirect("/admin-login");
 }
 
+function wantsJson(req) {
+    const accept = req.headers.accept || "";
+    return req.xhr || accept.includes("application/json");
+}
+
 async function ensureSchema() {
     try {
         await db.query(`
@@ -416,6 +421,32 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
                 mensajeImportacion = null;
         }
 
+        const alerts = [];
+
+        if (mensajeImportacion) {
+            alerts.push({ tipo: mensajeImportacion.tipo, texto: mensajeImportacion.texto });
+        }
+        if (mensajeExito) {
+            alerts.push({ tipo: "exito", texto: mensajeExito });
+        }
+        if (wantsJson(req)) {
+            return res.json({
+                ok: true,
+                invitados,
+                stats: {
+                    totalGrupos: invitados.length,
+                    totalPersonas: totalInvitados,
+                    confirmados,
+                    pendientes,
+                    rechazados
+                },
+                baseUrl,
+                termino: termino || "",
+                estadoSeleccionado,
+                alerts
+            });
+        }
+
         res.render("admin_invitados", {
             invitados,
             totalInvitados,
@@ -427,7 +458,8 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
             mensajeReset,
             mensajeImportacion,
             termino,
-            estadoSeleccionado
+            estadoSeleccionado,
+            alerts
         });
     } catch (error) {
         console.error("Error al obtener invitados:", error);
@@ -535,11 +567,19 @@ app.post("/admin/invitado/actualizar/:id", checkAdmin, async (req, res) => {
 
 app.post("/admin/invitado/eliminar/:id", checkAdmin, async (req, res) => {
     const { id } = req.params;
+    const expectsJson = wantsJson(req);
 
     try {
         const resultado = await db.query("DELETE FROM invitados WHERE id = ?", [id]);
 
         if (resultado && resultado.affectedRows === 0) {
+            if (expectsJson) {
+                return res.status(404).json({
+                    ok: false,
+                    error: "El invitado que intentás eliminar no existe."
+                });
+            }
+
             return res.status(404).render("mensaje", {
                 titulo: "Invitado no encontrado",
                 tituloH1: "No se encontró el invitado",
@@ -547,9 +587,23 @@ app.post("/admin/invitado/eliminar/:id", checkAdmin, async (req, res) => {
             });
         }
 
+        if (expectsJson) {
+            return res.json({
+                ok: true,
+                message: "Invitado eliminado correctamente."
+            });
+        }
+
         res.redirect("/admin/invitados?exito=1");
     } catch (error) {
         console.error("Error al eliminar invitado:", error);
+        if (expectsJson) {
+            return res.status(500).json({
+                ok: false,
+                error: "Ocurrió un problema al eliminar el invitado. Intentá nuevamente."
+            });
+        }
+
         res.status(500).render("mensaje", {
             titulo: "Error al eliminar invitado",
             tituloH1: "No se pudo eliminar el invitado",
