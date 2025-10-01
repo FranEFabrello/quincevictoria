@@ -148,14 +148,16 @@
             letter-spacing: 0.08em;
             color: #495057;
         }
-        .search-form input[type="text"] {
+        .search-form input[type="text"],
+        .search-form select {
             padding: 10px 12px;
             border: 1px solid #ced4da;
             border-radius: 8px;
             font-size: 15px;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .search-form input[type="text"]:focus {
+        .search-form input[type="text"]:focus,
+        .search-form select:focus {
             border-color: #0d6efd;
             outline: none;
             box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.2);
@@ -409,6 +411,13 @@
                         <form class="search-form" action="/admin/invitados" method="get">
                             <label for="buscar">Buscar invitado</label>
                             <input id="buscar" type="text" name="q" placeholder="Ej: María" value="<%= termino || '' %>">
+                            <label for="estado">Estado</label>
+                            <select id="estado" name="estado">
+                                <option value="todos" <%= estadoSeleccionado === 'todos' ? 'selected' : '' %>>Todos</option>
+                                <option value="confirmado" <%= estadoSeleccionado === 'confirmado' ? 'selected' : '' %>>Confirmados</option>
+                                <option value="pendiente" <%= estadoSeleccionado === 'pendiente' ? 'selected' : '' %>>Pendientes</option>
+                                <option value="rechazado" <%= estadoSeleccionado === 'rechazado' ? 'selected' : '' %>>Rechazados</option>
+                            </select>
                             <div class="search-actions">
                                 <button type="submit" class="btn btn-search">Buscar</button>
                                 <a class="btn btn-secondary" href="/admin/invitados">Limpiar</a>
