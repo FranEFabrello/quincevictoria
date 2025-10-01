@@ -111,6 +111,7 @@
         .btn-backup { background-color: #17a2b8; margin-right: 10px; }
         .btn-delete { background-color: #dc3545; }
         .btn-import { background-color: #6610f2; }
+        .btn-download { background-color: #20c997; }
         .table-container { overflow-x: auto; }
         .header-controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
         .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-start; }
@@ -159,6 +160,8 @@
         .btn-secondary { background-color: #6c757d; }
         .btn-search { background-color: #007bff; }
         .alert-info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        .download-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+        .tools-actions { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
         @media (max-width: 960px) {
             .admin-shell {
                 flex-direction: column;
@@ -253,7 +256,11 @@
             <section id="descargas" class="admin-section">
                 <h2>Descargas</h2>
                 <p>Obtén un respaldo actualizado de tus invitados para almacenarlo o consultarlo sin conexión.</p>
-                <a class="btn btn-backup" href="/admin/backup">Descargar respaldo</a>
+                <div class="download-actions">
+                    <a class="btn btn-backup" href="/admin/backup">Descargar respaldo</a>
+                    <a class="btn btn-download" href="/admin/descargar-links">Descargar links personalizados</a>
+                    <a class="btn btn-secondary" href="/admin/descargar-confirmaciones">Descargar confirmaciones</a>
+                </div>
             </section>
 
             <section id="invitados" class="admin-section">
@@ -326,10 +333,18 @@
             <section id="herramientas" class="admin-section">
                 <h2>Herramientas adicionales</h2>
                 <p>Administra tus listas con estas acciones rápidas.</p>
+                <% if (mensajeReset) { %>
+                    <div class="alert alert-exito"><%= mensajeReset %></div>
+                <% } %>
                 <ul>
                     <li><a href="/admin/invitado/nuevo">Agregar una nueva invitación</a></li>
                     <li><a href="/admin/invitados">Volver al listado completo</a></li>
                 </ul>
+                <div class="tools-actions">
+                    <form action="/admin/borrar-todo" method="post" onsubmit="return confirm('¿Seguro que querés borrar todos los datos? Esta acción no se puede deshacer.');">
+                        <button type="submit" class="btn btn-delete">Borrar todos los invitados</button>
+                    </form>
+                </div>
             </section>
         </div>
     </main>
