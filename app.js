@@ -363,17 +363,27 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
     try {
         const q = req.query.q;
         const termino = q?.trim();
+        const estadoParam = typeof req.query.estado === "string" ? req.query.estado.trim().toLowerCase() : "";
+        const estadosValidos = new Set(["pendiente", "confirmado", "rechazado"]);
+        const estadoSeleccionado = estadosValidos.has(estadoParam) ? estadoParam : "todos";
 
-        let invitados;
+        const condiciones = [];
+        const parametros = [];
+
         if (termino) {
             const likeTerm = `%${termino}%`;
-            invitados = await db.many(
-                "SELECT * FROM invitados WHERE nombre LIKE ? OR apellido LIKE ? ORDER BY nombre",
-                [likeTerm, likeTerm]
-            );
-        } else {
-            invitados = await db.many("SELECT * FROM invitados ORDER BY nombre");
+            condiciones.push("(nombre LIKE ? OR apellido LIKE ?)");
+            parametros.push(likeTerm, likeTerm);
         }
+
+        if (estadoSeleccionado !== "todos") {
+            condiciones.push("estado = ?");
+            parametros.push(estadoSeleccionado);
+        }
+
+        const whereClause = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
+        const sql = `SELECT * FROM invitados ${whereClause} ORDER BY nombre`;
+        const invitados = await db.many(sql, parametros);
 
         let totalInvitados = 0;
         let confirmados = 0;
@@ -416,7 +426,8 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
             mensajeExito,
             mensajeReset,
             mensajeImportacion,
-            termino
+            termino,
+            estadoSeleccionado
         });
     } catch (error) {
         console.error("Error al obtener invitados:", error);
