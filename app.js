@@ -161,11 +161,7 @@ function runAsync(sql, params = [], executor = db) {
 app.post("/upload", upload.single("excel"), async (req, res) => {
     const filePath = req.file && req.file.path;
     if (!filePath) {
-        return res.status(400).render("mensaje", {
-            titulo: "Error al cargar archivo",
-            tituloH1: "Archivo no encontrado",
-            mensaje: "No se recibió ningún archivo para procesar. Intentá nuevamente."
-        });
+        return res.redirect("/admin/invitados?import=missing");
     }
 
     try {
@@ -223,16 +219,12 @@ app.post("/upload", upload.single("excel"), async (req, res) => {
         });
 
         await fsp.unlink(filePath).catch(() => {});
-        res.redirect("/admin");
+        res.redirect("/admin/invitados?import=success");
     } catch (error) {
         console.error("Error al procesar la importación:", error);
         await fsp.unlink(filePath).catch(() => {});
 
-        return res.status(500).render("mensaje", {
-            titulo: "Error al importar invitados",
-            tituloH1: "No se pudo procesar el archivo",
-            mensaje: "Ocurrió un problema al cargar el archivo. Verificá que no existan invitados duplicados y volvé a intentarlo."
-        });
+        return res.redirect("/admin/invitados?import=error");
     }
 });
 
@@ -379,6 +371,24 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
         const baseUrl = req.protocol + "://" + req.get("host");
 
         const mensajeExito = req.query.exito === "1" ? "Invitado eliminado correctamente." : null;
+        let mensajeImportacion = null;
+
+        switch (req.query.import) {
+            case "success":
+                mensajeImportacion = { tipo: "exito", texto: "Importación realizada correctamente." };
+                break;
+            case "error":
+                mensajeImportacion = {
+                    tipo: "error",
+                    texto: "No se pudo procesar el archivo. Verificá el contenido e intentá nuevamente."
+                };
+                break;
+            case "missing":
+                mensajeImportacion = { tipo: "error", texto: "No se seleccionó ningún archivo para importar." };
+                break;
+            default:
+                mensajeImportacion = null;
+        }
 
         res.render("admin_invitados", {
             invitados,
@@ -387,7 +397,8 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
             pendientes,
             rechazados,
             baseUrl,
-            mensajeExito
+            mensajeExito,
+            mensajeImportacion
         });
     } catch (error) {
         console.error("Error al obtener invitados:", error);
