@@ -553,3 +553,26 @@ app.get("/admin/descargar-confirmaciones", checkAdmin, async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Servidor en http://localhost:${PORT}`));
+
+// Middleware para manejo global de errores
+app.use((err, req, res, next) => {
+    console.error('Error no controlado:', err);
+    if (res.headersSent) return next(err);
+    res.status(500).render("mensaje", {
+        titulo: "Error interno",
+        tituloH1: "Ocurrió un error inesperado",
+        mensaje: "Algo salió mal. Por favor, intentá nuevamente más tarde."
+    });
+});
+
+// Optimización extra de assets: cache y compresión
+if (isProduction) {
+    app.use("/assets", express.static(path.join(__dirname, "assets"), {
+        maxAge: "30d",
+        setHeaders: (res, path) => {
+            if (path.endsWith('.svg') || path.endsWith('.webp') || path.endsWith('.avif') || path.endsWith('.png')) {
+                res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+            }
+        }
+    }));
+}
