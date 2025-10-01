@@ -4,29 +4,12 @@ const path = require("path");
 const fs = require("fs");
 const fsp = fs.promises;
 const XLSX = require("xlsx");
-const sqlite3 = require("sqlite3").verbose();
 const session = require("express-session");
 const compression = require("compression");
+const db = require("./db/client");
 
 const app = express();
 const upload = multer({ dest: "uploads/" });
-const db = new sqlite3.Database("database.db", (err) => {
-    if (err) {
-        console.error("Error al abrir la base de datos:", err);
-    }
-});
-
-db.exec("PRAGMA journal_mode=WAL;", (err) => {
-    if (err) {
-        console.error("No se pudo habilitar el modo WAL:", err);
-    }
-});
-
-try {
-    db.configure("busyTimeout", 5000);
-} catch (error) {
-    console.error("No se pudo configurar el busyTimeout de la base de datos:", error);
-}
 const isProduction = process.env.NODE_ENV === "production";
 
 const CLAVE_CORRECTA = "Victoria2025**";
@@ -95,15 +78,26 @@ function checkAdmin(req, res, next) {
     res.redirect("/admin-login");
 }
 
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS invitados (
-                                                     id TEXT PRIMARY KEY,
-                                                     nombre TEXT,
-                                                     apellido TEXT,
-                                                     cantidad INTEGER,
-                                                     confirmados INTEGER,
-                                                     estado TEXT
-            )`);
+async function ensureSchema() {
+    try {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS invitados (
+                id TEXT PRIMARY KEY,
+                nombre TEXT,
+                apellido TEXT,
+                cantidad INTEGER,
+                confirmados INTEGER,
+                estado TEXT
+            )
+        `);
+    } catch (error) {
+        console.error("Error al preparar la base de datos:", error);
+        throw error;
+    }
+}
+
+ensureSchema().catch((error) => {
+    console.error("La aplicación no pudo inicializar la base de datos.", error);
 });
 
 function normalizarTexto(texto) {
@@ -114,13 +108,9 @@ function normalizarTexto(texto) {
         .toLowerCase();
 }
 
-function existeId(id) {
-    return new Promise((resolve, reject) => {
-        db.get("SELECT 1 FROM invitados WHERE id = ?", [id], (err, row) => {
-            if (err) return reject(err);
-            resolve(!!row);
-        });
-    });
+async function existeId(id, executor = db) {
+    const row = await executor.one("SELECT 1 FROM invitados WHERE id = $1", [id]);
+    return Boolean(row);
 }
 
 // RUTA PRINCIPAL MODIFICADA
@@ -128,12 +118,15 @@ app.get("/", (req, res) => {
     res.render("home");
 });
 
-app.get("/estado", (req, res) => {
-    db.get("SELECT COUNT(*) as total FROM invitados", (err, row) => {
-        if (err) return res.json({ ok: false });
+app.get("/estado", async (req, res) => {
+    try {
+        const row = await db.one("SELECT COUNT(*)::int AS total FROM invitados");
         const isAdmin = req.session && req.session.adminAutenticado;
-        res.json({ ok: true, total: row.total, admin: isAdmin });
-    });
+        res.json({ ok: true, total: row ? row.total : 0, admin: isAdmin });
+    } catch (error) {
+        console.error("Error al obtener el estado:", error);
+        res.json({ ok: false });
+    }
 });
 
 app.get("/admin", checkAdmin, (req, res) => {
@@ -142,15 +135,16 @@ app.get("/admin", checkAdmin, (req, res) => {
 
 app.get("/admin/backup", checkAdmin, async (req, res) => {
     try {
+        const { rows } = await db.query("SELECT * FROM invitados ORDER BY nombre");
+
         await fsp.mkdir(path.join(__dirname, "backups"), { recursive: true });
 
         const now = new Date();
         const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}${String(now.getSeconds()).padStart(2, "0")}`;
-        const backupFileName = `backup-${timestamp}.db`;
-        const sourcePath = path.join(__dirname, "database.db");
+        const backupFileName = `backup-${timestamp}.json`;
         const backupPath = path.join(__dirname, "backups", backupFileName);
 
-        await fsp.copyFile(sourcePath, backupPath);
+        await fsp.writeFile(backupPath, JSON.stringify(rows, null, 2), "utf8");
 
         res.download(backupPath, backupFileName, (err) => {
             if (err && !res.headersSent) {
@@ -189,26 +183,8 @@ app.get("/admin-logout", (req, res) => {
     req.session.destroy(() => res.redirect("/"));
 });
 
-function runAsync(sql, params = []) {
-    return new Promise((resolve, reject) => {
-        db.run(sql, params, function (err) {
-            if (err) {
-                return reject(err);
-            }
-            resolve(this);
-        });
-    });
-}
-
-function execAsync(sql) {
-    return new Promise((resolve, reject) => {
-        db.exec(sql, (err) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve();
-        });
-    });
+function runAsync(sql, params = [], executor = db) {
+    return executor.query(sql, params);
 }
 
 app.post("/upload", upload.single("excel"), async (req, res) => {
@@ -221,15 +197,10 @@ app.post("/upload", upload.single("excel"), async (req, res) => {
         });
     }
 
-    let transactionActiva = false;
-
     try {
         const workbook = XLSX.readFile(filePath);
         const hoja = workbook.Sheets[workbook.SheetNames[0]];
         const datos = XLSX.utils.sheet_to_json(hoja);
-
-        await execAsync("BEGIN TRANSACTION;");
-        transactionActiva = true;
 
         const posiblesClavesCantidad = [
             "Cantidad",
@@ -242,57 +213,48 @@ app.post("/upload", upload.single("excel"), async (req, res) => {
             "Personas"
         ];
 
-        for (const fila of datos) {
-            const idBase = normalizarTexto((fila.Nombre || "") + "-" + (fila.Apellido || ""));
-            let id = idBase;
-            let contador = 1;
-            while (await existeId(id)) {
-                id = idBase + "-" + contador++;
-            }
-
-            let cantidadRaw = undefined;
-            for (const clave of posiblesClavesCantidad) {
-                if (Object.prototype.hasOwnProperty.call(fila, clave) && fila[clave] !== undefined && fila[clave] !== null && fila[clave] !== "") {
-                    cantidadRaw = fila[clave];
-                    break;
+        await db.transaction(async (trx) => {
+            for (const fila of datos) {
+                const idBase = normalizarTexto((fila.Nombre || "") + "-" + (fila.Apellido || ""));
+                let id = idBase;
+                let contador = 1;
+                while (await existeId(id, trx)) {
+                    id = idBase + "-" + contador++;
                 }
+
+                let cantidadRaw = undefined;
+                for (const clave of posiblesClavesCantidad) {
+                    if (Object.prototype.hasOwnProperty.call(fila, clave) && fila[clave] !== undefined && fila[clave] !== null && fila[clave] !== "") {
+                        cantidadRaw = fila[clave];
+                        break;
+                    }
+                }
+
+                let cantidadNormalizada = parseInt(cantidadRaw, 10);
+                if (Number.isNaN(cantidadNormalizada) || cantidadNormalizada < 0) {
+                    cantidadNormalizada = 0;
+                    console.warn("Fila sin cantidad válida, se usará 0:", fila);
+                }
+
+                await runAsync(
+                    "INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES ($1, $2, $3, $4, $5, $6)",
+                    [
+                        id,
+                        fila.Nombre || null,
+                        fila.Apellido || null,
+                        cantidadNormalizada,
+                        "pendiente",
+                        0
+                    ],
+                    trx
+                );
             }
-
-            let cantidadNormalizada = parseInt(cantidadRaw, 10);
-            if (Number.isNaN(cantidadNormalizada) || cantidadNormalizada < 0) {
-                cantidadNormalizada = 0;
-                console.warn("Fila sin cantidad válida, se usará 0:", fila);
-            }
-
-            await runAsync(
-                "INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES (?, ?, ?, ?, ?, ?)",
-                [
-                    id,
-                    fila.Nombre,
-                    fila.Apellido,
-                    cantidadNormalizada,
-                    "pendiente",
-                    0
-                ]
-            );
-        }
-
-        await execAsync("COMMIT;");
-        transactionActiva = false;
+        });
 
         await fsp.unlink(filePath).catch(() => {});
         res.redirect("/admin");
     } catch (error) {
         console.error("Error al procesar la importación:", error);
-
-        if (transactionActiva) {
-            try {
-                await execAsync("ROLLBACK;");
-            } catch (rollbackError) {
-                console.error("Error al hacer ROLLBACK:", rollbackError);
-            }
-        }
-
         await fsp.unlink(filePath).catch(() => {});
 
         return res.status(500).render("mensaje", {
@@ -304,10 +266,13 @@ app.post("/upload", upload.single("excel"), async (req, res) => {
 });
 
 // RUTA DE CONFIRMACIÓN MODIFICADA (Esta es la sección a reemplazar)
-app.get("/confirmar/:id", (req, res) => {
+app.get("/confirmar/:id", async (req, res) => {
     const id = req.params.id;
-    db.get("SELECT * FROM invitados WHERE id = ?", [id], (err, row) => {
-        if (err || !row) {
+
+    try {
+        const invitado = await db.one("SELECT * FROM invitados WHERE id = $1", [id]);
+
+        if (!invitado) {
             return res.status(404).render("mensaje", {
                 titulo: "Error",
                 tituloH1: "Invitación no encontrada",
@@ -315,15 +280,15 @@ app.get("/confirmar/:id", (req, res) => {
             });
         }
 
-        const bloquearFormulario = row.estado !== "pendiente";
+        const bloquearFormulario = invitado.estado !== "pendiente";
         let alerta = null;
 
         if (req.query.exito === "1") {
             let mensajeExito;
-            if (row.estado === "confirmado") {
-                const cantidadConfirmada = row.confirmados || 0;
+            if (invitado.estado === "confirmado") {
+                const cantidadConfirmada = invitado.confirmados || 0;
                 mensajeExito = `¡Gracias! Registramos que asistirán ${cantidadConfirmada} persona(s).`;
-            } else if (row.estado === "rechazado") {
+            } else if (invitado.estado === "rechazado") {
                 mensajeExito = "Registramos que no podrán acompañarnos. ¡Gracias por avisarnos!";
             } else {
                 mensajeExito = "¡Gracias! Registramos tu respuesta.";
@@ -333,16 +298,23 @@ app.get("/confirmar/:id", (req, res) => {
         }
 
         res.render("invitacion", {
-            invitado: row,
+            invitado,
             bloquearFormulario,
             alerta
         });
-    });
+    } catch (error) {
+        console.error("Error al obtener invitado:", error);
+        res.status(500).render("mensaje", {
+            titulo: "Error",
+            tituloH1: "No se pudo cargar la invitación",
+            mensaje: "Ocurrió un problema al cargar la invitación. Intentá nuevamente más tarde."
+        });
+    }
 });
 
 
 // RUTA POST (ya está correcta, la incluyo para dar contexto)
-app.post("/confirmar/:id", (req, res) => {
+app.post("/confirmar/:id", async (req, res) => {
     const id = req.params.id;
     const { decision } = req.body;
     let { confirmados } = req.body;
@@ -351,8 +323,10 @@ app.post("/confirmar/:id", (req, res) => {
         return res.status(400).send("Decisión inválida.");
     }
 
-    db.get("SELECT * FROM invitados WHERE id = ?", [id], (err, invitado) => {
-        if (err || !invitado) {
+    try {
+        const invitado = await db.one("SELECT * FROM invitados WHERE id = $1", [id]);
+
+        if (!invitado) {
             return res.status(404).send("Invitación no encontrada.");
         }
 
@@ -377,22 +351,20 @@ app.post("/confirmar/:id", (req, res) => {
             if (confirmadosInt > max) confirmadosInt = max;
         }
 
-        db.run(
-            "UPDATE invitados SET estado = ?, confirmados = ? WHERE id = ? AND estado = 'pendiente'",
-            [decision, confirmadosInt, id],
-            function (err2) {
-                if (err2) {
-                    return res.status(500).send("Error al guardar respuesta.");
-                }
-
-                if (this.changes === 0) {
-                    return res.redirect(`/confirmar/${id}`);
-                }
-
-                return res.redirect(`/confirmar/${id}?exito=1`);
-            }
+        const result = await db.query(
+            "UPDATE invitados SET estado = $1, confirmados = $2 WHERE id = $3 AND estado = 'pendiente' RETURNING id",
+            [decision, confirmadosInt, id]
         );
-    });
+
+        if (result.rowCount === 0) {
+            return res.redirect(`/confirmar/${id}`);
+        }
+
+        return res.redirect(`/confirmar/${id}?exito=1`);
+    } catch (error) {
+        console.error("Error al actualizar confirmación:", error);
+        return res.status(500).send("Error al guardar respuesta.");
+    }
 });
 
 // RUTA DE "GRACIAS"
@@ -407,29 +379,32 @@ app.get("/gracias", (req, res) => {
 // --- PANEL DE ADMINISTRACIÓN MEJORADO ---
 
 // RUTA DEL LISTADO DE INVITADOS MODIFICADA
-app.get("/admin/invitados", checkAdmin, (req, res) => {
-    db.all("SELECT * FROM invitados ORDER BY nombre", [], (err, rows) => {
-        if (err) return res.status(500).send("Error al leer invitados");
+app.get("/admin/invitados", checkAdmin, async (req, res) => {
+    try {
+        const invitados = await db.many("SELECT * FROM invitados ORDER BY nombre");
 
         let totalInvitados = 0;
         let confirmados = 0;
-        rows.forEach(r => {
+        invitados.forEach(r => {
             totalInvitados += r.cantidad;
             confirmados += r.confirmados;
         });
-        const pendientes = rows.filter(r => r.estado === 'pendiente').length;
-        const rechazados = rows.filter(r => r.estado === 'rechazado').length;
+        const pendientes = invitados.filter(r => r.estado === "pendiente").length;
+        const rechazados = invitados.filter(r => r.estado === "rechazado").length;
         const baseUrl = req.protocol + "://" + req.get("host");
 
         res.render("admin_invitados", {
-            invitados: rows,
+            invitados,
             totalInvitados,
             confirmados,
             pendientes,
             rechazados,
             baseUrl
         });
-    });
+    } catch (error) {
+        console.error("Error al obtener invitados:", error);
+        res.status(500).send("Error al leer invitados");
+    }
 });
 
 app.get("/admin/invitado/nuevo", checkAdmin, (req, res) => {
@@ -457,11 +432,11 @@ app.post("/admin/invitado/crear", checkAdmin, async (req, res) => {
         }
 
         await runAsync(
-            "INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES ($1, $2, $3, $4, $5, $6)",
             [
                 id,
-                nombreLimpio,
-                apellidoLimpio,
+                nombreLimpio || null,
+                apellidoLimpio || null,
                 cantidadNumero,
                 "pendiente",
                 0
@@ -480,48 +455,57 @@ app.post("/admin/invitado/crear", checkAdmin, async (req, res) => {
 });
 
 // NUEVA RUTA: Mostrar el formulario de edición
-app.get("/admin/invitado/editar/:id", checkAdmin, (req, res) => {
+app.get("/admin/invitado/editar/:id", checkAdmin, async (req, res) => {
     const id = req.params.id;
-    db.get("SELECT * FROM invitados WHERE id = ?", [id], (err, row) => {
-        if (err || !row) return res.status(404).send("Invitado no encontrado.");
-        res.render("admin_editar_invitado", { invitado: row });
-    });
+
+    try {
+        const invitado = await db.one("SELECT * FROM invitados WHERE id = $1", [id]);
+        if (!invitado) return res.status(404).send("Invitado no encontrado.");
+        res.render("admin_editar_invitado", { invitado });
+    } catch (error) {
+        console.error("Error al buscar invitado:", error);
+        res.status(500).send("Error al obtener invitado.");
+    }
 });
 
 // NUEVA RUTA: Procesar la actualización del invitado
-app.post("/admin/invitado/actualizar/:id", checkAdmin, (req, res) => {
+app.post("/admin/invitado/actualizar/:id", checkAdmin, async (req, res) => {
     const id = req.params.id;
     const { nombre, apellido, cantidad, confirmados, estado } = req.body;
-    db.run(
-        `UPDATE invitados SET nombre = ?, apellido = ?, cantidad = ?, confirmados = ?, estado = ? WHERE id = ?`,
-        [nombre, apellido, cantidad, confirmados, estado, id],
-        (err) => {
-            if (err) return res.status(500).send("Error al actualizar el invitado.");
-            res.redirect("/admin/invitados");
-        }
-    );
+
+    try {
+        await db.query(
+            "UPDATE invitados SET nombre = $1, apellido = $2, cantidad = $3, confirmados = $4, estado = $5 WHERE id = $6",
+            [nombre || null, apellido || null, cantidad, confirmados, estado, id]
+        );
+        res.redirect("/admin/invitados");
+    } catch (error) {
+        console.error("Error al actualizar invitado:", error);
+        res.status(500).send("Error al actualizar el invitado.");
+    }
 });
 
 
-app.get("/admin/borrar-todo", checkAdmin, (req, res) => {
-    db.run("DELETE FROM invitados", [], err => {
-        if (err) return res.status(500).send("Error al borrar.");
+app.get("/admin/borrar-todo", checkAdmin, async (req, res) => {
+    try {
+        await db.query("DELETE FROM invitados");
         res.send("✅ Todos los datos fueron eliminados.");
-    });
+    } catch (error) {
+        console.error("Error al borrar invitados:", error);
+        res.status(500).send("Error al borrar.");
+    }
 });
 
 // RUTA PARA DESCARGAR LINKS (MODIFICADA PARA GENERAR EXCEL)
-app.get("/admin/descargar-links", checkAdmin, (req, res) => {
-    db.all("SELECT id, nombre, apellido FROM invitados ORDER BY nombre", [], (err, rows) => {
-        if (err) {
-            return res.status(500).send("Error al generar los links.");
-        }
+app.get("/admin/descargar-links", checkAdmin, async (req, res) => {
+    try {
+        const rows = await db.many("SELECT id, nombre, apellido FROM invitados ORDER BY nombre");
 
         // 1. Preparamos los datos para el Excel
         const datosParaExcel = rows.map(invitado => {
             return {
                 Nombre: invitado.nombre,
-                Apellido: invitado.apellido || '', // Aseguramos que no sea null
+                Apellido: invitado.apellido || "", // Aseguramos que no sea null
                 Link: `https://quincevictoria.onrender.com/confirmar/${invitado.id}`
             };
         });
@@ -530,7 +514,7 @@ app.get("/admin/descargar-links", checkAdmin, (req, res) => {
         const hojaDeCalculo = XLSX.utils.json_to_sheet(datosParaExcel);
 
         // Opcional: Ajustar el ancho de las columnas
-        hojaDeCalculo['!cols'] = [
+        hojaDeCalculo["!cols"] = [
             { wch: 25 }, // Ancho columna Nombre
             { wch: 25 }, // Ancho columna Apellido
             { wch: 60 }  // Ancho columna Link
@@ -547,18 +531,24 @@ app.get("/admin/descargar-links", checkAdmin, (req, res) => {
         res.setHeader("Content-Disposition", "attachment; filename=links_invitados.xlsx");
         res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         res.send(buffer);
-    });
+    } catch (error) {
+        console.error("Error al generar links:", error);
+        res.status(500).send("Error al generar los links.");
+    }
 });
 
-app.get("/admin/descargar-confirmaciones", checkAdmin, (req, res) => {
+app.get("/admin/descargar-confirmaciones", checkAdmin, async (req, res) => {
     const header = "Nombre,Apellido,Estado,Confirmados\n";
-    db.all("SELECT nombre, apellido, estado, confirmados FROM invitados", [], (err, rows) => {
-        if (err) return res.status(500).send("Error al generar archivo.");
+    try {
+        const rows = await db.many("SELECT nombre, apellido, estado, confirmados FROM invitados");
         const contenido = rows.map(r => `${r.nombre},${r.apellido || ''},${r.estado},${r.confirmados}`).join("\n");
         res.setHeader("Content-disposition", "attachment; filename=confirmaciones.csv");
         res.setHeader("Content-Type", "text/csv");
         res.send(header + contenido);
-    });
+    } catch (error) {
+        console.error("Error al generar confirmaciones:", error);
+        res.status(500).send("Error al generar archivo.");
+    }
 });
 
 const PORT = process.env.PORT || 3000;
