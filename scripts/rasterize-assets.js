@@ -17,7 +17,7 @@ const SIZES = [
 
 function getSvgFiles() {
   // Busca SVGs en assets/ y subcarpetas (corrige para Windows)
-  const pattern = path.join(INPUT_DIR, '*.svg').replace(/\\/g, '/');
+  const pattern = path.join(INPUT_DIR, '**', '*.svg').replace(/\\/g, '/');
   console.log('Buscando SVGs en:', pattern);
   return glob.sync(pattern, { nodir: true });
 }

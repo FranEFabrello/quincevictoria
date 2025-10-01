@@ -40,36 +40,7 @@ const assetCacheOptions = {
     }
 };
 
-app.use("/assets", express.static(prerenderedAssetsDir, assetCacheOptions));
-
-app.use("/assets", (req, res, next) => {
-    const ext = path.extname(req.path).toLowerCase();
-    if (ext !== ".svg") return next();
-
-    const baseName = path.basename(req.path, ".svg");
-    const avifPath = path.join(prerenderedAssetsDir, `${baseName}.avif`);
-    const webpPath = path.join(prerenderedAssetsDir, `${baseName}.webp`);
-    const pngPath = path.join(prerenderedAssetsDir, `${baseName}.png`);
-
-    const accept = req.headers['accept'] || '';
-
-    if (accept.includes('image/avif') && fs.existsSync(avifPath)) {
-        return res.type('image/avif').sendFile(avifPath);
-    }
-    if (accept.includes('image/webp') && fs.existsSync(webpPath)) {
-        return res.type('image/webp').sendFile(webpPath);
-    }
-    if (accept.includes('image/png') && fs.existsSync(pngPath)) {
-        return res.type('image/png').sendFile(pngPath);
-    }
-    return next();
-});
-
-app.use("/assets", express.static(path.join(__dirname, "assets"), assetCacheOptions));
-
-
-
-app.use("/admin", checkAdmin, express.static("public"));
+// app.use("/admin", checkAdmin, express.static("public"));
 
 function checkAdmin(req, res, next) {
     if (req.session && req.session.adminAutenticado) return next();
@@ -82,13 +53,13 @@ async function ensureSchema() {
     try {
         await db.query(`
             CREATE TABLE IF NOT EXISTS invitados (
-                id VARCHAR(255) PRIMARY KEY,
+                                                     id VARCHAR(255) PRIMARY KEY,
                 nombre VARCHAR(255),
                 apellido VARCHAR(255),
                 cantidad INT,
                 confirmados INT,
                 estado VARCHAR(255)
-            )
+                )
         `);
     } catch (error) {
         console.error("Error al preparar la base de datos:", error);
@@ -129,9 +100,9 @@ app.get("/estado", async (req, res) => {
     }
 });
 
-app.get("/admin", checkAdmin, (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+// app.get("/admin", checkAdmin, (req, res) => {
+//     res.sendFile(path.join(__dirname, "public", "index.html"));
+// });
 
 app.get("/admin/backup", checkAdmin, async (req, res) => {
     try {
@@ -578,3 +549,6 @@ if (isProduction) {
         }
     }));
 }
+
+app.use("/assets", express.static(path.join(__dirname, "assets")));
+app.use('/assets', require('express').static(__dirname + '/assets'));
