@@ -383,6 +383,7 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
         const baseUrl = req.protocol + "://" + req.get("host");
 
         const mensajeExito = req.query.exito === "1" ? "Invitado eliminado correctamente." : null;
+        const mensajeReset = req.query.reset === "1" ? "Se eliminaron todos los registros correctamente." : null;
         let mensajeImportacion = null;
 
         switch (req.query.import) {
@@ -410,6 +411,7 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
             rechazados,
             baseUrl,
             mensajeExito,
+            mensajeReset,
             mensajeImportacion,
             termino
         });
@@ -524,10 +526,10 @@ app.post("/admin/invitado/eliminar/:id", checkAdmin, async (req, res) => {
 });
 
 
-app.get("/admin/borrar-todo", checkAdmin, async (req, res) => {
+app.post("/admin/borrar-todo", checkAdmin, async (req, res) => {
     try {
         await db.query("DELETE FROM invitados");
-        res.send("✅ Todos los datos fueron eliminados.");
+        res.redirect("/admin/invitados?reset=1");
     } catch (error) {
         console.error("Error al borrar invitados:", error);
         res.status(500).send("Error al borrar.");

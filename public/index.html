@@ -55,11 +55,22 @@
             margin: 30px 0;
             border: 1px solid #eee;
         }
+        .notice {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 16px;
+            border-radius: 6px;
+            border: 1px solid #ffeeba;
+            margin-bottom: 24px;
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>Gestor de Invitaciones</h1>
+    <div class="notice">
+        Esta página quedará obsoleta próximamente. Utilizá el <a href="/admin/invitados">panel de administración</a> para realizar todas las acciones.
+    </div>
     <p class="info" id="estado">Cargando estado...</p>
 
     <form action="/upload" method="post" enctype="multipart/form-data">
@@ -84,9 +95,9 @@
 
     <div>
         <a id="btnVer" class="hidden" href="/admin/invitados"><button>4. Ver Estado de Invitados</button></a>
-        <a id="btnBorrar" class="hidden" href="/admin/borrar-todo" onclick="return confirm('¿Seguro que querés borrar todos los datos?');">
-            <button class="danger">5. Borrar Todos los Invitados</button>
-        </a>
+        <form id="btnBorrar" class="hidden" action="/admin/borrar-todo" method="post" onsubmit="return confirm('¿Seguro que querés borrar todos los datos? Esta acción no se puede deshacer.');">
+            <button type="submit" class="danger">5. Borrar Todos los Invitados</button>
+        </form>
         <form action="/admin-logout" method="get" id="logoutForm" class="hidden">
             <button class="danger" style="margin-top: 20px;">Cerrar sesión</button>
         </form>
