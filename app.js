@@ -378,13 +378,16 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
         const rechazados = invitados.filter(r => r.estado === "rechazado").length;
         const baseUrl = req.protocol + "://" + req.get("host");
 
+        const mensajeExito = req.query.exito === "1" ? "Invitado eliminado correctamente." : null;
+
         res.render("admin_invitados", {
             invitados,
             totalInvitados,
             confirmados,
             pendientes,
             rechazados,
-            baseUrl
+            baseUrl,
+            mensajeExito
         });
     } catch (error) {
         console.error("Error al obtener invitados:", error);
@@ -467,6 +470,32 @@ app.post("/admin/invitado/actualizar/:id", checkAdmin, async (req, res) => {
     } catch (error) {
         console.error("Error al actualizar invitado:", error);
         res.status(500).send("Error al actualizar el invitado.");
+    }
+});
+
+
+app.post("/admin/invitado/eliminar/:id", checkAdmin, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const resultado = await db.query("DELETE FROM invitados WHERE id = ?", [id]);
+
+        if (resultado && resultado.affectedRows === 0) {
+            return res.status(404).render("mensaje", {
+                titulo: "Invitado no encontrado",
+                tituloH1: "No se encontró el invitado",
+                mensaje: "El invitado que intentás eliminar no existe."
+            });
+        }
+
+        res.redirect("/admin/invitados?exito=1");
+    } catch (error) {
+        console.error("Error al eliminar invitado:", error);
+        res.status(500).render("mensaje", {
+            titulo: "Error al eliminar invitado",
+            tituloH1: "No se pudo eliminar el invitado",
+            mensaje: "Ocurrió un problema al eliminar el invitado. Intentá nuevamente."
+        });
     }
 });
 
