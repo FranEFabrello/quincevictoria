@@ -352,11 +352,11 @@ app.post("/confirmar/:id", async (req, res) => {
         }
 
         const result = await db.query(
-            "UPDATE invitados SET estado = ?, confirmados = ? WHERE id = ? AND estado = 'pendiente' RETURNING id",
+            "UPDATE invitados SET estado = ?, confirmados = ? WHERE id = ? AND estado = 'pendiente'",
             [decision, confirmadosInt, id]
         );
 
-        if (result.rowCount === 0) {
+        if (!result || result.affectedRows === 0) {
             return res.redirect(`/confirmar/${id}`);
         }
 
