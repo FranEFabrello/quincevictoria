@@ -411,7 +411,7 @@
                             <input id="buscar" type="text" name="q" placeholder="Ej: María" value="<%= termino || '' %>">
                             <div class="search-actions">
                                 <button type="submit" class="btn btn-search">Buscar</button>
-                                <a class="btn btn-secondary" href="/admin/invitados">Limpiar</a>
+                                <a class="btn btn-secondary" data-role="reset-search" href="/admin/invitados">Limpiar</a>
                             </div>
                         </form>
                     </div>
@@ -431,16 +431,18 @@
                 </div>
 
                 <% if (mensajeImportacion) { %>
-                    <div class="alert alert-<%= mensajeImportacion.tipo %>"><%= mensajeImportacion.texto %></div>
+                    <div class="alert alert-<%= mensajeImportacion.tipo %>" data-initial-feedback data-feedback-type="<%= mensajeImportacion.tipo %>"><%= mensajeImportacion.texto %></div>
                 <% } %>
 
                 <% if (mensajeExito) { %>
-                    <div class="alert alert-exito"><%= mensajeExito %></div>
+                    <div class="alert alert-exito" data-initial-feedback data-feedback-type="exito"><%= mensajeExito %></div>
                 <% } %>
 
                 <% if (termino && invitados.length === 0) { %>
-                    <div class="alert alert-info">No se encontraron invitados que coincidan con "<%= termino %>".</div>
+                    <div class="alert alert-info" data-initial-feedback data-feedback-type="info">No se encontraron invitados que coincidan con "<%= termino %>".</div>
                 <% } %>
+
+                <div id="admin-feedback" class="alert" style="display: none;"></div>
             </section>
 
             <section id="descargas" class="admin-section">
@@ -472,23 +474,23 @@
                 <div class="stats">
                     <div class="stat-card">
                         <h3>Invitaciones (Grupos)</h3>
-                        <p style="color: #17a2b8;"><%= invitados.length %></p>
+                        <p class="stat-value" data-stat="totalGrupos" style="color: #17a2b8;"><%= invitados.length %></p>
                     </div>
                     <div class="stat-card">
                         <h3>Invitados (Personas)</h3>
-                        <p style="color: #007bff;"><%= totalInvitados %></p>
+                        <p class="stat-value" data-stat="totalInvitados" style="color: #007bff;"><%= totalInvitados %></p>
                     </div>
                     <div class="stat-card">
                         <h3>Asistentes (Personas)</h3>
-                        <p style="color: #28a745;"><%= confirmados %></p>
+                        <p class="stat-value" data-stat="confirmados" style="color: #28a745;"><%= confirmados %></p>
                     </div>
                     <div class="stat-card">
                         <h3>Pendientes (Invitaciones)</h3>
-                        <p style="color: #6c757d;"><%= pendientes %></p>
+                        <p class="stat-value" data-stat="pendientes" style="color: #6c757d;"><%= pendientes %></p>
                     </div>
                     <div class="stat-card">
                         <h3>Rechazados (Invitaciones)</h3>
-                        <p style="color: #dc3545;"><%= rechazados %></p>
+                        <p class="stat-value" data-stat="rechazados" style="color: #dc3545;"><%= rechazados %></p>
                     </div>
                 </div>
                 <div class="table-container">
@@ -504,8 +506,9 @@
                             <th>Acciones</th>
                         </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="invitados-body">
                         <% invitados.forEach(invitado => { %>
+                            <% const nombreCompleto = [invitado.nombre, invitado.apellido].filter(Boolean).join(' '); %>
                             <tr>
                                 <td><%= invitado.nombre %></td>
                                 <td><%= invitado.apellido || '-' %></td>
@@ -522,7 +525,7 @@
                                 <td>
                                     <div class="action-buttons">
                                         <a href="/admin/invitado/editar/<%= invitado.id %>" class="btn btn-edit">Editar</a>
-                                        <form action="/admin/invitado/eliminar/<%= invitado.id %>" method="POST" onsubmit="return confirm('¿Seguro que quers eliminar a <%= invitado.nombre %> <%= invitado.apellido || '' %>? Esta acción no se puede deshacer.');">
+                                        <form action="/admin/invitado/eliminar/<%= invitado.id %>" method="POST" data-role="delete"<% if (nombreCompleto) { %> data-nombre="<%= nombreCompleto %>"<% } %>>
                                             <button type="submit" class="btn btn-delete">Eliminar</button>
                                         </form>
                                     </div>
@@ -541,7 +544,7 @@
                         <h3>Accesos rápidos</h3>
                         <p>Mantené tu listado actualizado y limpio con estas acciones frecuentes.</p>
                         <% if (mensajeReset) { %>
-                            <div class="alert alert-exito"><%= mensajeReset %></div>
+                            <div class="alert alert-exito" data-initial-feedback data-feedback-type="exito"><%= mensajeReset %></div>
                         <% } %>
                         <ul>
                             <li><a href="/admin/invitado/nuevo">Agregar una nueva invitación</a></li>
@@ -561,6 +564,17 @@
         </div>
     </main>
 </div>
+<script id="admin-data" type="application/json">
+    <%- JSON.stringify({
+        baseUrl,
+        invitados,
+        totalInvitados,
+        confirmados,
+        pendientes,
+        rechazados,
+        termino: termino || ''
+    }) %>
+</script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const navLinks = Array.from(document.querySelectorAll('.admin-nav a'));
@@ -585,6 +599,262 @@
         activate(window.location.hash);
         window.addEventListener('hashchange', () => activate(window.location.hash));
     });
+</script>
+<script>
+    (() => {
+        const dataElement = document.getElementById('admin-data');
+        if (!dataElement) return;
+
+        const parseJSON = (element) => {
+            try {
+                return JSON.parse(element.textContent || element.innerText || '{}');
+            } catch (error) {
+                console.error('No se pudo interpretar los datos iniciales del panel.', error);
+                return {};
+            }
+        };
+
+        const initialData = parseJSON(dataElement);
+        const baseUrl = initialData.baseUrl || window.location.origin;
+        const tableBody = document.getElementById('invitados-body');
+        const searchForm = document.querySelector('.search-form');
+        const searchInput = document.getElementById('buscar');
+        const resetLink = document.querySelector('[data-role="reset-search"]');
+        const feedbackEl = document.getElementById('admin-feedback');
+        const initialFeedback = Array.from(document.querySelectorAll('[data-initial-feedback]'));
+        const tableContainer = document.querySelector('.table-container');
+        const statElements = {
+            totalGrupos: document.querySelector('[data-stat="totalGrupos"]'),
+            totalInvitados: document.querySelector('[data-stat="totalInvitados"]'),
+            confirmados: document.querySelector('[data-stat="confirmados"]'),
+            pendientes: document.querySelector('[data-stat="pendientes"]'),
+            rechazados: document.querySelector('[data-stat="rechazados"]')
+        };
+
+        let currentQuery = (initialData.termino || '').trim();
+
+        if (searchInput) {
+            searchInput.value = currentQuery;
+        }
+
+        const defaultDisplay = tableBody ? window.getComputedStyle(tableBody).display : 'table-row-group';
+
+        const showFeedback = (message, type = 'exito') => {
+            if (!feedbackEl) return;
+
+            initialFeedback.forEach(el => el.remove());
+
+            feedbackEl.textContent = message;
+            feedbackEl.className = `alert alert-${type}`;
+            feedbackEl.style.display = 'block';
+
+            window.clearTimeout(showFeedback.timeoutId);
+            showFeedback.timeoutId = window.setTimeout(() => {
+                feedbackEl.style.display = 'none';
+            }, 5000);
+        };
+
+        const renderTable = (data) => {
+            if (!tableBody) return;
+
+            const invitados = data.invitados || [];
+            tableBody.innerHTML = '';
+
+            if (!invitados.length) {
+                const emptyRow = document.createElement('tr');
+                const emptyCell = document.createElement('td');
+                emptyCell.colSpan = 7;
+                emptyCell.textContent = currentQuery ? 'No encontramos invitados con ese criterio.' : 'Todavía no hay invitados cargados.';
+                emptyRow.appendChild(emptyCell);
+                tableBody.appendChild(emptyRow);
+            } else {
+                invitados.forEach(invitado => {
+                    const row = document.createElement('tr');
+
+                    const nombreCell = document.createElement('td');
+                    nombreCell.textContent = invitado.nombre || '';
+                    row.appendChild(nombreCell);
+
+                    const apellidoCell = document.createElement('td');
+                    apellidoCell.textContent = invitado.apellido || '-';
+                    row.appendChild(apellidoCell);
+
+                    const cantidadCell = document.createElement('td');
+                    cantidadCell.textContent = invitado.cantidad != null ? invitado.cantidad : '';
+                    row.appendChild(cantidadCell);
+
+                    const confirmadosCell = document.createElement('td');
+                    confirmadosCell.textContent = invitado.confirmados != null ? invitado.confirmados : '';
+                    row.appendChild(confirmadosCell);
+
+                    const estadoCell = document.createElement('td');
+                    const estadoSpan = document.createElement('span');
+                    const estado = (invitado.estado || '').toLowerCase();
+                    estadoSpan.className = `status status-${estado}`;
+                    estadoSpan.textContent = invitado.estado || '';
+                    estadoCell.appendChild(estadoSpan);
+                    row.appendChild(estadoCell);
+
+                    const linkCell = document.createElement('td');
+                    linkCell.className = 'link-cell';
+                    const enlace = document.createElement('a');
+                    enlace.target = '_blank';
+                    enlace.rel = 'noopener';
+                    enlace.href = `${baseUrl}/confirmar/${invitado.id}`;
+                    enlace.textContent = `${baseUrl}/confirmar/${invitado.id}`;
+                    linkCell.appendChild(enlace);
+                    row.appendChild(linkCell);
+
+                    const accionesCell = document.createElement('td');
+                    const actionsWrapper = document.createElement('div');
+                    actionsWrapper.className = 'action-buttons';
+
+                    const editar = document.createElement('a');
+                    editar.href = `/admin/invitado/editar/${invitado.id}`;
+                    editar.className = 'btn btn-edit';
+                    editar.textContent = 'Editar';
+                    actionsWrapper.appendChild(editar);
+
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/admin/invitado/eliminar/${invitado.id}`;
+                    form.setAttribute('data-role', 'delete');
+                    const nombreCompleto = [invitado.nombre, invitado.apellido].filter(Boolean).join(' ').trim();
+                    if (nombreCompleto) {
+                        form.dataset.nombre = nombreCompleto;
+                    }
+
+                    const eliminarBtn = document.createElement('button');
+                    eliminarBtn.type = 'submit';
+                    eliminarBtn.className = 'btn btn-delete';
+                    eliminarBtn.textContent = 'Eliminar';
+                    form.appendChild(eliminarBtn);
+
+                    actionsWrapper.appendChild(form);
+                    accionesCell.appendChild(actionsWrapper);
+                    row.appendChild(accionesCell);
+
+                    tableBody.appendChild(row);
+                });
+            }
+
+            tableBody.style.display = defaultDisplay;
+
+            const statValues = {
+                totalGrupos: invitados.length,
+                totalInvitados: data.totalInvitados ?? 0,
+                confirmados: data.confirmados ?? 0,
+                pendientes: data.pendientes ?? 0,
+                rechazados: data.rechazados ?? 0
+            };
+
+            Object.entries(statValues).forEach(([key, value]) => {
+                if (statElements[key]) {
+                    statElements[key].textContent = value;
+                }
+            });
+        };
+
+        const fetchListado = async (query) => {
+            const params = new URLSearchParams();
+            if (query) {
+                params.set('q', query);
+            }
+
+            const queryString = params.toString();
+            const url = queryString ? `/admin/api/invitados?${queryString}` : '/admin/api/invitados';
+
+            const response = await fetch(url, {
+                headers: { Accept: 'application/json' }
+            });
+
+            if (!response.ok) {
+                throw new Error('No se pudo obtener el listado');
+            }
+
+            const payload = await response.json();
+            if (!payload || payload.ok === false) {
+                throw new Error('Respuesta inesperada del servidor');
+            }
+
+            return payload;
+        };
+
+        const actualizarListado = async (query) => {
+            try {
+                const data = await fetchListado(query);
+                currentQuery = (query || '').trim();
+                renderTable({ ...data, termino: currentQuery });
+                if (searchInput) {
+                    searchInput.value = currentQuery;
+                }
+            } catch (error) {
+                console.error(error);
+                showFeedback('No se pudo actualizar el listado. Intentá nuevamente.', 'error');
+            }
+        };
+
+        if (searchForm) {
+            searchForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const value = searchInput ? searchInput.value.trim() : '';
+                actualizarListado(value);
+            });
+        }
+
+        if (resetLink) {
+            resetLink.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+                actualizarListado('');
+            });
+        }
+
+        if (tableContainer) {
+            tableContainer.addEventListener('submit', async (event) => {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement)) return;
+                if (!form.matches('form[data-role="delete"]')) return;
+
+                event.preventDefault();
+
+                const nombre = (form.dataset.nombre || 'este invitado').trim();
+                const confirmar = window.confirm(`¿Seguro que querés eliminar a ${nombre || 'este invitado'}? Esta acción no se puede deshacer.`);
+                if (!confirmar) return;
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'fetch',
+                            Accept: 'application/json',
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: new URLSearchParams()
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Error al eliminar');
+                    }
+
+                    const payload = await response.json();
+                    if (!payload || payload.ok === false) {
+                        throw new Error('El servidor rechazó la operación');
+                    }
+
+                    showFeedback(payload.message || 'Invitado eliminado correctamente.', 'exito');
+                    await actualizarListado(currentQuery);
+                } catch (error) {
+                    console.error(error);
+                    showFeedback('No se pudo eliminar el invitado. Intentá nuevamente.', 'error');
+                }
+            });
+        }
+
+        renderTable(initialData);
+    })();
 </script>
 </body>
 </html>

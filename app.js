@@ -84,6 +84,36 @@ async function existeId(id, executor = db) {
     return Boolean(row);
 }
 
+async function obtenerListadoInvitados(termino) {
+    const filtro = termino ? termino.trim() : "";
+    let invitados;
+
+    if (filtro) {
+        const likeTerm = `%${filtro}%`;
+        invitados = await db.many(
+            "SELECT * FROM invitados WHERE nombre LIKE ? OR apellido LIKE ? ORDER BY nombre",
+            [likeTerm, likeTerm]
+        );
+    } else {
+        invitados = await db.many("SELECT * FROM invitados ORDER BY nombre");
+    }
+
+    let totalInvitados = 0;
+    let confirmados = 0;
+    let pendientes = 0;
+    let rechazados = 0;
+
+    invitados.forEach((registro) => {
+        totalInvitados += Number(registro.cantidad) || 0;
+        confirmados += Number(registro.confirmados) || 0;
+
+        if (registro.estado === "pendiente") pendientes += 1;
+        if (registro.estado === "rechazado") rechazados += 1;
+    });
+
+    return { invitados, totalInvitados, confirmados, pendientes, rechazados };
+}
+
 // RUTA PRINCIPAL MODIFICADA
 app.get("/", (req, res) => {
     res.render("home");
@@ -364,25 +394,13 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
         const q = req.query.q;
         const termino = q?.trim();
 
-        let invitados;
-        if (termino) {
-            const likeTerm = `%${termino}%`;
-            invitados = await db.many(
-                "SELECT * FROM invitados WHERE nombre LIKE ? OR apellido LIKE ? ORDER BY nombre",
-                [likeTerm, likeTerm]
-            );
-        } else {
-            invitados = await db.many("SELECT * FROM invitados ORDER BY nombre");
-        }
-
-        let totalInvitados = 0;
-        let confirmados = 0;
-        invitados.forEach(r => {
-            totalInvitados += Number(r.cantidad) || 0;
-            confirmados += Number(r.confirmados) || 0;
-        });
-        const pendientes = invitados.filter(r => r.estado === "pendiente").length;
-        const rechazados = invitados.filter(r => r.estado === "rechazado").length;
+        const {
+            invitados,
+            totalInvitados,
+            confirmados,
+            pendientes,
+            rechazados
+        } = await obtenerListadoInvitados(termino);
         const baseUrl = req.protocol + "://" + req.get("host");
 
         const mensajeExito = req.query.exito === "1" ? "Invitado eliminado correctamente." : null;
@@ -426,6 +444,25 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
 
 app.get("/admin/invitado/nuevo", checkAdmin, (req, res) => {
     res.render("admin_nuevo_invitado");
+});
+
+app.get("/admin/api/invitados", checkAdmin, async (req, res) => {
+    try {
+        const termino = req.query.q?.trim();
+        const listado = await obtenerListadoInvitados(termino);
+
+        res.json({
+            ok: true,
+            invitados: listado.invitados,
+            totalInvitados: listado.totalInvitados,
+            confirmados: listado.confirmados,
+            pendientes: listado.pendientes,
+            rechazados: listado.rechazados
+        });
+    } catch (error) {
+        console.error("Error al obtener invitados (API):", error);
+        res.status(500).json({ ok: false, error: "No se pudo obtener el listado de invitados." });
+    }
 });
 
 app.post("/admin/invitado/crear", checkAdmin, async (req, res) => {
@@ -524,11 +561,18 @@ app.post("/admin/invitado/actualizar/:id", checkAdmin, async (req, res) => {
 
 app.post("/admin/invitado/eliminar/:id", checkAdmin, async (req, res) => {
     const { id } = req.params;
+    const aceptaJSON = (req.get("accept") || "").includes("application/json");
+    const esSolicitudFetch = req.get("x-requested-with") === "fetch";
+    const debeResponderJSON = aceptaJSON || esSolicitudFetch;
 
     try {
         const resultado = await db.query("DELETE FROM invitados WHERE id = ?", [id]);
 
         if (resultado && resultado.affectedRows === 0) {
+            if (debeResponderJSON) {
+                return res.status(404).json({ ok: false, error: "El invitado que intentás eliminar no existe." });
+            }
+
             return res.status(404).render("mensaje", {
                 titulo: "Invitado no encontrado",
                 tituloH1: "No se encontró el invitado",
@@ -536,14 +580,22 @@ app.post("/admin/invitado/eliminar/:id", checkAdmin, async (req, res) => {
             });
         }
 
+        if (debeResponderJSON) {
+            return res.json({ ok: true, message: "Invitado eliminado correctamente." });
+        }
+
         res.redirect("/admin/invitados?exito=1");
     } catch (error) {
         console.error("Error al eliminar invitado:", error);
-        res.status(500).render("mensaje", {
-            titulo: "Error al eliminar invitado",
-            tituloH1: "No se pudo eliminar el invitado",
-            mensaje: "Ocurrió un problema al eliminar el invitado. Intentá nuevamente."
-        });
+        if (debeResponderJSON) {
+            res.status(500).json({ ok: false, error: "Ocurrió un problema al eliminar el invitado." });
+        } else {
+            res.status(500).render("mensaje", {
+                titulo: "Error al eliminar invitado",
+                tituloH1: "No se pudo eliminar el invitado",
+                mensaje: "Ocurrió un problema al eliminar el invitado. Intentá nuevamente."
+            });
+        }
     }
 });
 

@@ -58,12 +58,47 @@
 </div>
 
 <script>
-    function toggleCantidad(mostrar) {
+    (function() {
         const cantidadGroup = document.getElementById('cantidad-group');
-        const cantidadInput = document.getElementById('cantidad');
-        cantidadGroup.style.display = mostrar ? 'block' : 'none';
-        cantidadInput.required = mostrar;
-    }
+        const cantidadSelect = document.getElementById('cantidad');
+        const radioSi = document.getElementById('asistencia_si');
+        const radioNo = document.getElementById('asistencia_no');
+
+        if (!cantidadGroup || !cantidadSelect) {
+            window.toggleCantidad = function () {};
+            return;
+        }
+
+        const computedDisplay = window.getComputedStyle(cantidadGroup).display;
+        const defaultDisplay = computedDisplay === 'none' ? 'block' : computedDisplay;
+        let lastSelected = cantidadSelect.value || (cantidadSelect.options[0]?.value ?? '');
+
+        window.toggleCantidad = function(mostrar) {
+            if (mostrar) {
+                cantidadGroup.style.display = defaultDisplay;
+                cantidadSelect.disabled = false;
+                cantidadSelect.required = true;
+
+                if (lastSelected) {
+                    cantidadSelect.value = lastSelected;
+                } else if (cantidadSelect.options.length) {
+                    cantidadSelect.value = cantidadSelect.options[0].value;
+                }
+            } else {
+                lastSelected = cantidadSelect.value;
+                cantidadGroup.style.display = 'none';
+                cantidadSelect.disabled = true;
+                cantidadSelect.required = false;
+                cantidadSelect.value = '';
+            }
+        };
+
+        if (radioNo?.checked) {
+            window.toggleCantidad(false);
+        } else {
+            window.toggleCantidad(true);
+        }
+    })();
 </script>
 </body>
 </html>
