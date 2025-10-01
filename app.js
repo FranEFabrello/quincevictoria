@@ -108,8 +108,6 @@ app.get("/admin/backup", checkAdmin, async (req, res) => {
     try {
         const rows = await db.query("SELECT * FROM invitados ORDER BY nombre");
 
-        const backupJson = JSON.stringify(rows, null, 2);
-
         await fsp.mkdir(path.join(__dirname, "backups"), { recursive: true });
 
         const now = new Date();
@@ -117,7 +115,7 @@ app.get("/admin/backup", checkAdmin, async (req, res) => {
         const backupFileName = `backup-${timestamp}.json`;
         const backupPath = path.join(__dirname, "backups", backupFileName);
 
-        await fsp.writeFile(backupPath, backupJson, "utf8");
+        await fsp.writeFile(backupPath, JSON.stringify(rows, null, 2), "utf8");
 
         res.download(backupPath, backupFileName, (err) => {
             if (err && !res.headersSent) {
