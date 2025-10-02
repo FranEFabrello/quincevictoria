@@ -274,8 +274,49 @@
         .status-confirmado { background-color: #28a745; }
         .status-pendiente { background-color: #6c757d; }
         .status-rechazado { background-color: #dc3545; }
-        .link-cell { word-break: break-all; font-size: 12px; }
-        .link-cell a { color: #007bff; }
+        .link-cell {
+            word-break: break-all;
+            font-size: 12px;
+        }
+        .link-cell-content {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            max-width: 100%;
+        }
+        .link-cell a {
+            color: #007bff;
+        }
+        .link-cell-url {
+            word-break: break-all;
+            overflow-wrap: anywhere;
+            max-width: 100%;
+            flex: 1 1 180px;
+        }
+        .btn-copy-link {
+            background-color: #1b263b;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-copy-link:hover,
+        .btn-copy-link:focus {
+            background-color: #0d6efd;
+            outline: none;
+        }
+        .btn-copy-link:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.35);
+        }
+        .btn-copy-link .btn-copy-link__label {
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
         .alert { margin: 20px 0; padding: 15px; border-radius: 6px; border: 1px solid transparent; }
         .alert-exito { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
         .alert-error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
@@ -633,7 +674,15 @@
                                     </span>
                                 </td>
                                 <td class="link-cell">
-                                    <a target="_blank" href="<%= baseUrl %>/confirmar/<%= invitado.id %>"><%= baseUrl %>/confirmar/<%= invitado.id %></a>
+                                    <div class="link-cell-content">
+                                        <a class="link-cell-url" target="_blank" href="<%= baseUrl %>/confirmar/<%= invitado.id %>"><%= baseUrl %>/confirmar/<%= invitado.id %></a>
+                                        <% const nombreCompleto = [invitado.nombre, invitado.apellido || ''].filter(Boolean).join(' '); %>
+                                        <button type="button" class="btn-copy-link" data-action="copy-link" data-link="<%= baseUrl %>/confirmar/<%= invitado.id %>">
+                                            <span aria-hidden="true">📋</span>
+                                            <span class="btn-copy-link__label">Copiar link</span>
+                                            <span class="visually-hidden"><%= nombreCompleto ? `de ${nombreCompleto}` : 'del invitado' %></span>
+                                        </button>
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="action-buttons">
@@ -746,6 +795,11 @@
             rechazados: document.querySelector('[data-stat="rechazados"]')
         };
 
+        const TEMP_ALERT_IDS = {
+            success: 'copy-link-success',
+            error: 'copy-link-error'
+        };
+
         if (!searchForm || !tableBody) {
             return;
         }
@@ -805,6 +859,74 @@
                 fragment.appendChild(div);
             });
             alertContainer.appendChild(fragment);
+        }
+
+        function removeTemporaryAlertById(id) {
+            if (!alertContainer || !id) return;
+            const existing = alertContainer.querySelector(`[data-temp-alert-id="${id}"]`);
+            if (existing) {
+                existing.remove();
+            }
+        }
+
+        function showTemporaryAlert(message, type = 'info', options = {}) {
+            if (!alertContainer || !message) return;
+            const { duration = 3200, id = null } = options;
+            if (id) {
+                removeTemporaryAlertById(id);
+            }
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            if (id) {
+                alert.dataset.tempAlertId = id;
+            }
+            alert.textContent = message;
+            alertContainer.appendChild(alert);
+            if (duration > 0) {
+                window.setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, duration);
+            }
+        }
+
+        async function copyTextToClipboard(text) {
+            const normalizedText = `${text ?? ''}`.trim();
+            if (!normalizedText) {
+                throw new Error('No hay link para copiar.');
+            }
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(normalizedText);
+                return true;
+            }
+
+            const textarea = document.createElement('textarea');
+            textarea.value = normalizedText;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.top = '-9999px';
+            textarea.style.left = '-9999px';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            textarea.setSelectionRange(0, textarea.value.length);
+
+            let successful = false;
+            try {
+                successful = document.execCommand('copy');
+            } catch (error) {
+                successful = false;
+            }
+
+            document.body.removeChild(textarea);
+
+            if (!successful) {
+                throw new Error('No fue posible copiar el link.');
+            }
+
+            return true;
         }
 
         function renderStats(stats) {
@@ -956,12 +1078,41 @@
 
                 const linkTd = document.createElement('td');
                 linkTd.className = 'link-cell';
+                const linkWrapper = document.createElement('div');
+                linkWrapper.className = 'link-cell-content';
                 const enlace = document.createElement('a');
+                enlace.className = 'link-cell-url';
                 enlace.target = '_blank';
                 enlace.rel = 'noopener noreferrer';
-                enlace.href = `${safeBaseUrl}/confirmar/${invitado.id}`;
-                enlace.textContent = `${safeBaseUrl}/confirmar/${invitado.id}`;
-                linkTd.appendChild(enlace);
+                const linkUrl = `${safeBaseUrl}/confirmar/${invitado.id}`;
+                enlace.href = linkUrl;
+                enlace.textContent = linkUrl;
+                linkWrapper.appendChild(enlace);
+
+                const copyButton = document.createElement('button');
+                copyButton.type = 'button';
+                copyButton.className = 'btn-copy-link';
+                copyButton.dataset.action = 'copy-link';
+                copyButton.dataset.link = linkUrl;
+
+                const iconSpan = document.createElement('span');
+                iconSpan.setAttribute('aria-hidden', 'true');
+                iconSpan.textContent = '📋';
+                copyButton.appendChild(iconSpan);
+
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'btn-copy-link__label';
+                labelSpan.textContent = 'Copiar link';
+                copyButton.appendChild(labelSpan);
+
+                const nombreCompletoLink = [invitado.nombre, invitado.apellido].filter(Boolean).join(' ').trim();
+                const srSpan = document.createElement('span');
+                srSpan.className = 'visually-hidden';
+                srSpan.textContent = nombreCompletoLink ? `de ${nombreCompletoLink}` : 'del invitado';
+                copyButton.appendChild(srSpan);
+
+                linkWrapper.appendChild(copyButton);
+                linkTd.appendChild(linkWrapper);
                 tr.appendChild(linkTd);
 
                 const accionesTd = document.createElement('td');
@@ -1004,6 +1155,33 @@
         renderStats(initialState.stats);
         renderTable(initialState.invitados, state.baseUrl);
         renderAlerts(initialState.alerts || []);
+
+        tableBody.addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-action="copy-link"]');
+            if (!button) return;
+
+            const linkValue = button.dataset.link || button.getAttribute('data-link');
+            if (!linkValue) {
+                showTemporaryAlert('No se encontró el link para copiar.', 'error', { duration: 4000, id: TEMP_ALERT_IDS.error });
+                return;
+            }
+
+            button.disabled = true;
+            button.setAttribute('aria-busy', 'true');
+
+            try {
+                await copyTextToClipboard(linkValue);
+                removeTemporaryAlertById(TEMP_ALERT_IDS.error);
+                showTemporaryAlert('Link copiado al portapapeles.', 'exito', { duration: 3200, id: TEMP_ALERT_IDS.success });
+            } catch (error) {
+                const message = error?.message || 'No se pudo copiar el link. Copialo manualmente.';
+                removeTemporaryAlertById(TEMP_ALERT_IDS.success);
+                showTemporaryAlert(message, 'error', { duration: 4200, id: TEMP_ALERT_IDS.error });
+            } finally {
+                button.disabled = false;
+                button.removeAttribute('aria-busy');
+            }
+        });
 
         searchForm.addEventListener('submit', (event) => {
             event.preventDefault();
