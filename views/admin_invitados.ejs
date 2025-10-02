@@ -736,29 +736,44 @@
         const navLinks = Array.from(document.querySelectorAll('.admin-nav a'));
         const sections = Array.from(document.querySelectorAll('.admin-section'));
         const anchorCards = Array.from(document.querySelectorAll('[data-card-anchor]'));
+        let activeHash = null;
 
         const getTargetHash = (link) => link.dataset.scrollTarget || link.getAttribute('href');
         const getSectionHash = (link) => link.dataset.section || getTargetHash(link);
         const resolveLink = (hash) => navLinks.find(link => getTargetHash(link) === hash);
 
-        const activate = (hash) => {
-            const fallbackHash = navLinks.length ? getTargetHash(navLinks[0]) : '#carga';
+        const activate = (hash, { updateHistory = false } = {}) => {
+            const fallbackHash = navLinks.length
+                ? getTargetHash(navLinks[0])
+                : (sections.length ? `#${sections[0].id}` : '#');
             const normalizedHash = hash && hash.startsWith('#') ? hash : fallbackHash;
-            const activeLink = resolveLink(normalizedHash) || navLinks[0];
+            const activeLink = resolveLink(normalizedHash) || navLinks[0] || null;
 
             navLinks.forEach(link => {
-                link.classList.toggle('is-active', link === activeLink);
+                const isActive = link === activeLink;
+                link.classList.toggle('is-active', isActive);
+                if (isActive) {
+                    link.setAttribute('aria-current', 'true');
+                } else {
+                    link.removeAttribute('aria-current');
+                }
             });
 
-            const sectionHash = getSectionHash(activeLink);
+            const sectionHash = activeLink ? getSectionHash(activeLink) : normalizedHash;
             sections.forEach(section => {
                 section.classList.toggle('is-active', `#${section.id}` === sectionHash);
             });
 
-            const cardHash = getTargetHash(activeLink);
+            const cardHash = activeLink ? getTargetHash(activeLink) : normalizedHash;
             anchorCards.forEach(card => {
                 card.classList.toggle('is-active', `#${card.id}` === cardHash);
             });
+
+            activeHash = normalizedHash;
+
+            if (updateHistory && normalizedHash && window.location.hash !== normalizedHash) {
+                history.replaceState(null, '', normalizedHash);
+            }
         };
 
         navLinks.forEach(link => {
@@ -770,14 +785,73 @@
                     if (targetElement) {
                         targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
-                    history.replaceState(null, '', targetHash);
-                    activate(targetHash);
+                    activate(targetHash, { updateHistory: true });
                 }
             });
         });
 
         activate(window.location.hash);
         window.addEventListener('hashchange', () => activate(window.location.hash));
+
+        const findHashForSection = (section) => {
+            const sectionHash = `#${section.id}`;
+            const relatedLink = navLinks.find(link => (
+                getSectionHash(link) === sectionHash || getTargetHash(link) === sectionHash
+            ));
+            if (!relatedLink) {
+                return sectionHash;
+            }
+            return getTargetHash(relatedLink) || sectionHash;
+        };
+
+        const handleSectionActivation = (section) => {
+            const nextHash = findHashForSection(section);
+            if (nextHash !== activeHash) {
+                activate(nextHash, { updateHistory: true });
+            }
+        };
+
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                const visibleSections = entries
+                    .filter(entry => entry.isIntersecting)
+                    .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+                if (visibleSections.length > 0) {
+                    handleSectionActivation(visibleSections[0].target);
+                }
+            }, {
+                root: null,
+                threshold: [0.25, 0.5, 0.75],
+                rootMargin: '-35% 0px -45% 0px'
+            });
+
+            sections.forEach(section => observer.observe(section));
+        } else {
+            let scrollRaf = null;
+            window.addEventListener('scroll', () => {
+                if (scrollRaf) {
+                    cancelAnimationFrame(scrollRaf);
+                }
+                scrollRaf = requestAnimationFrame(() => {
+                    let bestSection = null;
+                    let bestVisibility = -Infinity;
+
+                    sections.forEach(section => {
+                        const rect = section.getBoundingClientRect();
+                        const visibility = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
+                        if (visibility > bestVisibility && visibility > 0) {
+                            bestVisibility = visibility;
+                            bestSection = section;
+                        }
+                    });
+
+                    if (bestSection && bestVisibility > 0) {
+                        handleSectionActivation(bestSection);
+                    }
+                });
+            }, { passive: true });
+        }
 
         const searchForm = document.querySelector('[data-search-form]');
         const tableBody = document.querySelector('[data-table-body]');
