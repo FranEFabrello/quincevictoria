@@ -8,6 +8,11 @@
         :root {
             color-scheme: light;
         }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f4f7f9;
@@ -24,15 +29,21 @@
             color: #fff;
             padding: 32px 24px;
             width: 280px;
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr) auto;
             gap: 24px;
             position: sticky;
             top: 0;
+            height: 100vh;
             max-height: 100vh;
-            overflow-y: auto;
-            box-sizing: border-box;
+            overflow: hidden;
             box-shadow: 4px 0 24px rgba(13, 27, 42, 0.15);
+        }
+        @supports (height: 100dvh) {
+            .admin-sidebar {
+                height: 100dvh;
+                max-height: 100dvh;
+            }
         }
         .sidebar-header {
             display: flex;
@@ -54,6 +65,9 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+            overflow-y: auto;
+            padding-right: 8px;
+            scrollbar-gutter: stable;
         }
         .sidebar-group {
             display: flex;
@@ -97,7 +111,6 @@
             margin: 12px 0;
         }
         .admin-sidebar .sidebar-actions {
-            margin-top: auto;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -378,9 +391,17 @@
             .admin-sidebar {
                 position: static;
                 width: 100%;
+                display: flex;
+                flex-direction: column;
                 height: auto;
+                max-height: none;
+                overflow: visible;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.2);
                 box-shadow: none;
+            }
+            .admin-nav {
+                overflow: visible;
+                padding-right: 0;
             }
             .admin-sidebar .sidebar-actions {
                 margin-top: 24px;
