@@ -916,7 +916,8 @@
                 pendientes,
                 rechazados
             },
-            alerts: typeof alerts !== 'undefined' ? alerts : []
+            alerts: typeof alerts !== 'undefined' ? alerts : [],
+            importSummary: typeof importSummary !== 'undefined' ? importSummary : null
         }) %>;
 
         const state = {
@@ -924,7 +925,8 @@
                 termino: initialState.termino || "",
                 estado: initialState.estadoSeleccionado || "todos"
             },
-            baseUrl: initialState.baseUrl || window.location.origin
+            baseUrl: initialState.baseUrl || window.location.origin,
+            importSummary: initialState.importSummary || null
         };
 
         function getEmptyResultsMessage() {

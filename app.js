@@ -323,6 +323,15 @@ app.post("/upload", upload.single("excel"), async (req, res) => {
         return res.redirect("/admin/invitados?import=missing");
     }
 
+    const resumenImportacion = {
+        status: "success",
+        inserted: 0,
+        updated: 0,
+        skipped: 0,
+        conflicts: [],
+        errors: []
+    };
+
     try {
         const workbook = XLSX.readFile(filePath);
         const hoja = workbook.Sheets[workbook.SheetNames[0]];
@@ -340,12 +349,29 @@ app.post("/upload", upload.single("excel"), async (req, res) => {
         ];
 
         await db.transaction(async (trx) => {
+            const registrosExistentes = await trx.many("SELECT id, nombre, apellido, cantidad, estado, confirmados FROM invitados");
+            const idsUtilizados = new Set();
+            const registrosPorBase = new Map();
+
+            const claveBaseVacia = "__sin_nombre__";
+
+            for (const existente of registrosExistentes) {
+                idsUtilizados.add(existente.id);
+                const base = normalizarTexto(`${existente.nombre || ""}-${existente.apellido || ""}`) || claveBaseVacia;
+                const lista = registrosPorBase.get(base) || [];
+                lista.push({ ...existente, base });
+                registrosPorBase.set(base, lista);
+            }
+
+            let contadorGenerico = registrosExistentes.length + 1;
+
             for (const fila of datos) {
-                const idBase = normalizarTexto((fila.Nombre || "") + "-" + (fila.Apellido || ""));
-                let id = idBase;
-                let contador = 1;
-                while (await existeId(id, trx)) {
-                    id = idBase + "-" + contador++;
+                const nombre = typeof fila.Nombre === "string" ? fila.Nombre.trim() : (typeof fila.nombre === "string" ? fila.nombre.trim() : null);
+                const apellido = typeof fila.Apellido === "string" ? fila.Apellido.trim() : (typeof fila.apellido === "string" ? fila.apellido.trim() : null);
+
+                let baseNormalizada = normalizarTexto(`${nombre || ""}-${apellido || ""}`);
+                if (!baseNormalizada) {
+                    baseNormalizada = claveBaseVacia;
                 }
 
                 let cantidadRaw = undefined;
@@ -362,27 +388,117 @@ app.post("/upload", upload.single("excel"), async (req, res) => {
                     console.warn("Fila sin cantidad válida, se usará 0:", fila);
                 }
 
-                await runAsync(
+                const candidatos = registrosPorBase.get(baseNormalizada) || [];
+
+                if (candidatos.length > 1) {
+                    resumenImportacion.conflicts.push({
+                        tipo: "multiple",
+                        nombre: nombre || "",
+                        apellido: apellido || "",
+                        base: baseNormalizada === claveBaseVacia ? "sin-identificador" : baseNormalizada,
+                        ids: candidatos.map((c) => c.id)
+                    });
+                    resumenImportacion.skipped += 1;
+                    continue;
+                }
+
+                const coincidencia = candidatos[0];
+
+                if (coincidencia) {
+                    const cambios = {};
+                    const nombreActual = coincidencia.nombre || "";
+                    const apellidoActual = coincidencia.apellido || "";
+                    const cantidadActual = Number.parseInt(coincidencia.cantidad, 10) || 0;
+
+                    if ((nombre || "") !== nombreActual) {
+                        cambios.nombre = { antes: nombreActual, despues: nombre || "" };
+                    }
+                    if ((apellido || "") !== apellidoActual) {
+                        cambios.apellido = { antes: apellidoActual, despues: apellido || "" };
+                    }
+                    if (cantidadNormalizada !== cantidadActual) {
+                        cambios.cantidad = { antes: cantidadActual, despues: cantidadNormalizada };
+                    }
+
+                    if (Object.keys(cambios).length > 0) {
+                        await trx.query(
+                            "UPDATE invitados SET nombre = ?, apellido = ?, cantidad = ? WHERE id = ?",
+                            [nombre || null, apellido || null, cantidadNormalizada, coincidencia.id]
+                        );
+
+                        coincidencia.nombre = nombre || null;
+                        coincidencia.apellido = apellido || null;
+                        coincidencia.cantidad = cantidadNormalizada;
+
+                        resumenImportacion.updated += 1;
+                        resumenImportacion.conflicts.push({
+                            tipo: "actualizado",
+                            id: coincidencia.id,
+                            nombre: nombre || "",
+                            apellido: apellido || "",
+                            cambios
+                        });
+                    } else {
+                        resumenImportacion.skipped += 1;
+                    }
+
+                    continue;
+                }
+
+                let idBase = baseNormalizada === claveBaseVacia ? "invitado" : baseNormalizada;
+                if (!idBase) {
+                    idBase = "invitado";
+                }
+
+                let id = idBase;
+                let sufijo = 1;
+                while (idsUtilizados.has(id)) {
+                    id = `${idBase}-${sufijo++}`;
+                }
+
+                if (!id || idsUtilizados.has(id)) {
+                    id = `invitado-${contadorGenerico++}`;
+                    while (idsUtilizados.has(id)) {
+                        id = `invitado-${contadorGenerico++}`;
+                    }
+                }
+
+                await trx.query(
                     "INSERT INTO invitados (id, nombre, apellido, cantidad, estado, confirmados) VALUES (?, ?, ?, ?, ?, ?)",
                     [
                         id,
-                        fila.Nombre || null,
-                        fila.Apellido || null,
+                        nombre || null,
+                        apellido || null,
                         cantidadNormalizada,
                         "pendiente",
                         0
-                    ],
-                    trx
+                    ]
                 );
+
+                idsUtilizados.add(id);
+                const nuevoRegistro = {
+                    id,
+                    nombre: nombre || null,
+                    apellido: apellido || null,
+                    cantidad: cantidadNormalizada,
+                    estado: "pendiente",
+                    confirmados: 0
+                };
+                registrosPorBase.set(baseNormalizada, [nuevoRegistro]);
+                resumenImportacion.inserted += 1;
             }
         });
 
         await fsp.unlink(filePath).catch(() => {});
-        res.redirect("/admin/invitados?import=success");
+        req.session.importSummary = resumenImportacion;
+        res.redirect("/admin/invitados?import=summary");
     } catch (error) {
         console.error("Error al procesar la importación:", error);
         await fsp.unlink(filePath).catch(() => {});
 
+        resumenImportacion.status = "error";
+        resumenImportacion.message = "Ocurrió un error al procesar la importación.";
+        req.session.importSummary = resumenImportacion;
         return res.redirect("/admin/invitados?import=error");
     }
 });
@@ -572,6 +688,9 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
             case "missing":
                 mensajeImportacion = { tipo: "error", texto: "No se seleccionó ningún archivo para importar." };
                 break;
+            case "summary":
+                mensajeImportacion = null;
+                break;
             default:
                 mensajeImportacion = null;
         }
@@ -597,8 +716,14 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
         }
 
         const alerts = [];
+        let importSummaryData = null;
 
-        if (mensajeImportacion) {
+        if (req.session.importSummary) {
+            importSummaryData = req.session.importSummary;
+            delete req.session.importSummary;
+        }
+
+        if (mensajeImportacion && !importSummaryData) {
             alerts.push({ tipo: mensajeImportacion.tipo, texto: mensajeImportacion.texto });
         }
         if (mensajeExito) {
@@ -607,6 +732,58 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
         if (mensajeRestauracion) {
             alerts.push({ tipo: mensajeRestauracion.tipo, texto: mensajeRestauracion.texto });
         }
+
+        if (importSummaryData) {
+            if (importSummaryData.status === "success") {
+                alerts.push({
+                    tipo: "exito",
+                    texto: `Importación completada: ${importSummaryData.inserted} nuevos, ${importSummaryData.updated} actualizados, ${importSummaryData.skipped} sin cambios.`
+                });
+
+                const describirConflicto = (conflicto) => {
+                    if (conflicto.tipo === "actualizado") {
+                        const nombreCompleto = `${conflicto.nombre || ""} ${conflicto.apellido || ""}`.trim() || conflicto.id;
+                        const partes = [];
+                        if (conflicto.cambios.nombre) {
+                            partes.push(`nombre: "${conflicto.cambios.nombre.antes}" → "${conflicto.cambios.nombre.despues}"`);
+                        }
+                        if (conflicto.cambios.apellido) {
+                            partes.push(`apellido: "${conflicto.cambios.apellido.antes}" → "${conflicto.cambios.apellido.despues}"`);
+                        }
+                        if (conflicto.cambios.cantidad) {
+                            partes.push(`cantidad: ${conflicto.cambios.cantidad.antes} → ${conflicto.cambios.cantidad.despues}`);
+                        }
+                        const descripcionCambios = partes.join(", ");
+                        return `Actualizado ${nombreCompleto}: ${descripcionCambios}.`;
+                    }
+
+                    if (conflicto.tipo === "multiple") {
+                        const nombreCompleto = `${conflicto.nombre || ""} ${conflicto.apellido || ""}`.trim() || conflicto.base;
+                        return `Conflicto para ${nombreCompleto}: existen ${conflicto.ids.length} registros (${conflicto.ids.join(", ")}).`;
+                    }
+
+                    return null;
+                };
+
+                const conflictosDescritos = (importSummaryData.conflicts || []).map(describirConflicto).filter(Boolean);
+                if (conflictosDescritos.length > 0) {
+                    const limite = 5;
+                    const visibles = conflictosDescritos.slice(0, limite);
+                    let textoConflictos = `Conflictos detectados (${conflictosDescritos.length}): ${visibles.join(" ")}`;
+                    if (conflictosDescritos.length > limite) {
+                        textoConflictos += ` Y ${conflictosDescritos.length - limite} conflicto(s) adicional(es).`;
+                    }
+                    alerts.push({ tipo: "warning", texto: textoConflictos });
+                }
+
+                for (const error of importSummaryData.errors || []) {
+                    alerts.push({ tipo: "error", texto: error });
+                }
+            } else if (importSummaryData.status === "error") {
+                alerts.push({ tipo: "error", texto: importSummaryData.message || "Ocurrió un error al procesar la importación." });
+            }
+        }
+
         if (wantsJson(req)) {
             return res.json({
                 ok: true,
@@ -621,7 +798,8 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
                 baseUrl,
                 termino: termino || "",
                 estadoSeleccionado,
-                alerts
+                alerts,
+                importSummary: importSummaryData
             });
         }
 
@@ -638,7 +816,8 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
             mensajeRestauracion,
             termino,
             estadoSeleccionado,
-            alerts
+            alerts,
+            importSummary: importSummaryData
         });
     } catch (error) {
         console.error("Error al obtener invitados:", error);
