@@ -27,11 +27,11 @@
         .admin-sidebar {
             background: #0d1b2a;
             color: #fff;
-            padding: 32px 24px;
+            padding: 28px 20px;
             width: 280px;
             display: grid;
             grid-template-rows: auto minmax(0, 1fr) auto;
-            gap: 24px;
+            gap: 20px;
             position: sticky;
             top: 0;
             height: 100vh;
@@ -48,7 +48,7 @@
         .sidebar-header {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
         .sidebar-header h1 {
             font-size: 1.5rem;
@@ -58,21 +58,19 @@
         .sidebar-description {
             margin: 0;
             color: rgba(207, 224, 255, 0.8);
-            font-size: 0.9rem;
-            line-height: 1.4;
+            font-size: 0.85rem;
+            line-height: 1.35;
         }
         .admin-nav {
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            overflow-y: auto;
-            padding-right: 8px;
-            scrollbar-gutter: stable;
+            gap: 16px;
+            overflow: hidden;
         }
         .sidebar-group {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
         .sidebar-group-title {
             text-transform: uppercase;
@@ -84,13 +82,13 @@
         .sidebar-group-links {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
         .admin-nav a {
             color: #cfe0ff;
             text-decoration: none;
             font-weight: 600;
-            padding: 10px 14px;
+            padding: 8px 12px;
             border-radius: 8px;
             transition: background 0.2s ease, color 0.2s ease;
             display: block;
@@ -108,12 +106,12 @@
         .sidebar-divider {
             height: 1px;
             background: rgba(255, 255, 255, 0.16);
-            margin: 12px 0;
+            margin: 8px 0;
         }
         .admin-sidebar .sidebar-actions {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
         .sidebar-actions-title {
             text-transform: uppercase;
@@ -166,7 +164,7 @@
         th, td { padding: 12px 15px; border: 1px solid #ddd; text-align: left; }
         th { background-color: #007bff; color: white; }
         tr:nth-child(even) { background-color: #f8f9fa; }
-        .btn, button { padding: 10px 18px; border: none; border-radius: 8px; color: white; cursor: pointer; text-decoration: none; font-size: 14px; display: inline-block; text-align: center; font-weight: 600; letter-spacing: 0.02em; }
+        .btn, button { padding: 9px 16px; border: none; border-radius: 8px; color: white; cursor: pointer; text-decoration: none; font-size: 14px; display: inline-block; text-align: center; font-weight: 600; letter-spacing: 0.02em; }
         .btn-edit { background-color: #ffc107; color: #212529;}
         .btn-new { background-color: #28a745; }
         .btn-logout { background-color: #dc3545; }
@@ -486,7 +484,6 @@
                 Nuevo invitado
             </a>
             <a class="btn btn-outline btn-icon" href="#invitados">
-                <span aria-hidden="true">📋</span>
                 Ver listado
             </a>
         </div>
