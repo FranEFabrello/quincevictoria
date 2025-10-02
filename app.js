@@ -10,6 +10,7 @@ const db = require("./db/client");
 
 const app = express();
 const upload = multer({ dest: "uploads/" });
+const ESTADOS_VALIDOS = new Set(["pendiente", "confirmado", "rechazado"]);
 const isProduction = process.env.NODE_ENV === "production";
 
 const CLAVE_CORRECTA = "Victoria2025**";
@@ -52,6 +53,84 @@ function checkAdmin(req, res, next) {
 function wantsJson(req) {
     const accept = req.headers.accept || "";
     return req.xhr || accept.includes("application/json");
+}
+
+function normalizarNumero(valor) {
+    const numero = Number.parseInt(valor, 10);
+    return Number.isNaN(numero) ? null : numero;
+}
+
+function validarRegistroInvitado(registro, indice, idsVistos) {
+    const resultado = { errores: [], inconsistencias: [] };
+    if (typeof registro !== "object" || registro === null || Array.isArray(registro)) {
+        resultado.errores.push(`El elemento en la posición ${indice} no es un objeto válido.`);
+        return resultado;
+    }
+
+    const camposRequeridos = ["id", "nombre", "apellido", "cantidad", "confirmados", "estado"];
+    for (const campo of camposRequeridos) {
+        if (!Object.prototype.hasOwnProperty.call(registro, campo)) {
+            resultado.errores.push(`Falta el campo obligatorio "${campo}" en la posición ${indice}.`);
+        }
+    }
+
+    const { id, nombre, apellido, cantidad, confirmados, estado } = registro;
+
+    if (typeof id !== "string" || !id.trim()) {
+        resultado.errores.push(`El campo "id" debe ser un texto no vacío (posición ${indice}).`);
+    } else if (idsVistos.has(id)) {
+        resultado.inconsistencias.push(`El id "${id}" está duplicado en la posición ${indice}.`);
+    } else {
+        idsVistos.add(id);
+    }
+
+    if (typeof nombre !== "string") {
+        resultado.errores.push(`El campo "nombre" debe ser texto (posición ${indice}).`);
+    }
+
+    if (apellido !== null && apellido !== undefined && typeof apellido !== "string") {
+        resultado.errores.push(`El campo "apellido" debe ser texto o null (posición ${indice}).`);
+    }
+
+    const cantidadNumero = normalizarNumero(cantidad);
+    if (cantidadNumero === null || cantidadNumero < 0) {
+        resultado.errores.push(`La "cantidad" debe ser un número entero mayor o igual a 0 (posición ${indice}).`);
+    }
+
+    const confirmadosNumero = normalizarNumero(confirmados);
+    if (confirmadosNumero === null || confirmadosNumero < 0) {
+        resultado.errores.push(`"confirmados" debe ser un número entero mayor o igual a 0 (posición ${indice}).`);
+    }
+
+    if (typeof estado !== "string" || !ESTADOS_VALIDOS.has(estado.toLowerCase())) {
+        resultado.errores.push(`El campo "estado" no es válido en la posición ${indice}.`);
+    } else if (estado !== estado.toLowerCase()) {
+        registro.estado = estado.toLowerCase();
+    }
+
+    if (cantidadNumero !== null && confirmadosNumero !== null && confirmadosNumero > cantidadNumero) {
+        resultado.inconsistencias.push(`El campo "confirmados" no puede ser mayor a "cantidad" (posición ${indice}).`);
+    }
+
+    return resultado;
+}
+
+function validarRespaldo(data) {
+    if (!Array.isArray(data)) {
+        return { esValido: false, errores: ["El respaldo debe ser un array de invitados."], inconsistencias: [] };
+    }
+
+    const errores = [];
+    const inconsistencias = [];
+    const idsVistos = new Set();
+
+    data.forEach((registro, indice) => {
+        const resultado = validarRegistroInvitado(registro, indice, idsVistos);
+        errores.push(...resultado.errores);
+        inconsistencias.push(...resultado.inconsistencias);
+    });
+
+    return { esValido: errores.length === 0 && inconsistencias.length === 0, errores, inconsistencias };
 }
 
 async function ensureSchema() {
@@ -131,6 +210,81 @@ app.get("/admin/backup", checkAdmin, async (req, res) => {
         console.error("Error al generar el respaldo:", error);
         res.status(500).json({ ok: false, error: "No se pudo generar el respaldo." });
     }
+});
+
+app.post("/admin/restaurar-backup", checkAdmin, upload.single("backup"), async (req, res) => {
+    const expectsJson = wantsJson(req);
+    const archivo = req.file;
+
+    const responder = (status, payload, query) => {
+        if (archivo) {
+            fsp.unlink(archivo.path).catch(() => {});
+        }
+        if (expectsJson) {
+            return res.status(status).json(payload);
+        }
+        const redirectUrl = query ? `/admin/invitados?restore=${query}` : "/admin/invitados";
+        return res.redirect(redirectUrl);
+    };
+
+    if (!archivo) {
+        return responder(400, { ok: false, error: "No se envió ningún archivo para restaurar." }, "missing");
+    }
+
+    let contenido;
+    try {
+        contenido = await fsp.readFile(archivo.path, "utf8");
+    } catch (error) {
+        console.error("No se pudo leer el archivo de respaldo:", error);
+        return responder(500, { ok: false, error: "No se pudo leer el archivo de respaldo." }, "error");
+    }
+
+    let datos;
+    try {
+        datos = JSON.parse(contenido);
+    } catch (error) {
+        return responder(400, { ok: false, error: "El archivo no contiene un JSON válido." }, "invalid");
+    }
+
+    const { esValido, errores, inconsistencias } = validarRespaldo(datos);
+    if (!esValido) {
+        if (errores.length > 0) {
+            const payload = { ok: false, error: "El respaldo contiene errores de validación.", detalles: errores };
+            return responder(422, payload, "invalid");
+        }
+
+        const payload = { ok: false, error: "Se detectaron inconsistencias en los datos del respaldo.", detalles: inconsistencias };
+        return responder(409, payload, "inconsistent");
+    }
+
+    try {
+        await db.transaction(async (trx) => {
+            await trx.query("DELETE FROM invitados");
+
+            for (const registro of datos) {
+                const cantidadNumero = normalizarNumero(registro.cantidad) ?? 0;
+                const confirmadosNumero = normalizarNumero(registro.confirmados) ?? 0;
+                const estadoNormalizado = (registro.estado || "pendiente").toLowerCase();
+
+                await trx.query(
+                    "INSERT INTO invitados (id, nombre, apellido, cantidad, confirmados, estado) VALUES (?, ?, ?, ?, ?, ?)",
+                    [
+                        registro.id,
+                        typeof registro.nombre === "string" ? registro.nombre : null,
+                        registro.apellido === null || typeof registro.apellido === "string" ? registro.apellido : null,
+                        cantidadNumero,
+                        confirmadosNumero,
+                        ESTADOS_VALIDOS.has(estadoNormalizado) ? estadoNormalizado : "pendiente"
+                    ]
+                );
+            }
+        });
+    } catch (error) {
+        console.error("Error al restaurar el respaldo:", error);
+        return responder(500, { ok: false, error: "Ocurrió un error al aplicar la restauración." }, "error");
+    }
+
+    return responder(200, { ok: true, message: "Respaldo restaurado correctamente." }, "success");
 });
 
 app.get("/admin-login", (req, res) => {
@@ -403,6 +557,7 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
         const mensajeExito = req.query.exito === "1" ? "Invitado eliminado correctamente." : null;
         const mensajeReset = req.query.reset === "1" ? "Se eliminaron todos los registros correctamente." : null;
         let mensajeImportacion = null;
+        let mensajeRestauracion = null;
 
         switch (req.query.import) {
             case "success":
@@ -421,6 +576,26 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
                 mensajeImportacion = null;
         }
 
+        switch (req.query.restore) {
+            case "success":
+                mensajeRestauracion = { tipo: "exito", texto: "Respaldo restaurado correctamente." };
+                break;
+            case "missing":
+                mensajeRestauracion = { tipo: "error", texto: "Debés seleccionar un archivo JSON para restaurar." };
+                break;
+            case "invalid":
+                mensajeRestauracion = { tipo: "error", texto: "El archivo de respaldo no tiene el formato esperado." };
+                break;
+            case "inconsistent":
+                mensajeRestauracion = { tipo: "warning", texto: "Se detectaron inconsistencias en el respaldo. Revisá los datos." };
+                break;
+            case "error":
+                mensajeRestauracion = { tipo: "error", texto: "Ocurrió un error al restaurar el respaldo. Intentá nuevamente." };
+                break;
+            default:
+                mensajeRestauracion = null;
+        }
+
         const alerts = [];
 
         if (mensajeImportacion) {
@@ -428,6 +603,9 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
         }
         if (mensajeExito) {
             alerts.push({ tipo: "exito", texto: mensajeExito });
+        }
+        if (mensajeRestauracion) {
+            alerts.push({ tipo: mensajeRestauracion.tipo, texto: mensajeRestauracion.texto });
         }
         if (wantsJson(req)) {
             return res.json({
@@ -457,6 +635,7 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
             mensajeExito,
             mensajeReset,
             mensajeImportacion,
+            mensajeRestauracion,
             termino,
             estadoSeleccionado,
             alerts

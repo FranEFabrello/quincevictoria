@@ -628,6 +628,15 @@
                                 Confirmaciones
                             </a>
                         </div>
+                        <form class="restore-form" action="/admin/restaurar-backup" method="post" enctype="multipart/form-data">
+                            <label for="backup" class="visually-hidden">Seleccionar archivo de respaldo</label>
+                            <input type="file" id="backup" name="backup" accept="application/json,.json" required>
+                            <button type="submit" class="btn btn-secondary btn-icon">
+                                <span aria-hidden="true">↩️</span>
+                                Restaurar respaldo
+                            </button>
+                        </form>
+                        <small style="color: #6c757d; display: block; margin-top: 0.5rem;">Al restaurar se reemplazarán los registros actuales por los del archivo seleccionado.</small>
                     </div>
                 </div>
             </section>
