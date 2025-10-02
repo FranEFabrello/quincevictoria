@@ -261,6 +261,13 @@
         .search-form.is-loading .search-status {
             display: inline-flex;
         }
+        .search-summary {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: #0d1b2a;
+            min-height: 1.2em;
+        }
         .search-actions {
             display: flex;
             gap: 12px;
@@ -576,6 +583,7 @@
                             <div class="search-status" role="status" aria-live="polite" aria-hidden="true" data-search-status>
                                 Buscando…
                             </div>
+                            <div class="search-summary" data-search-summary aria-live="polite"></div>
                         </form>
                     </article>
                     <article id="carga-masiva" class="card" data-card-anchor>
@@ -861,6 +869,7 @@
         const inputBuscar = searchForm ? searchForm.querySelector('input[name="q"]') : null;
         const selectEstado = searchForm ? searchForm.querySelector('select[name="estado"]') : null;
         const statusIndicator = searchForm ? searchForm.querySelector('[data-search-status]') : null;
+        const summaryContainer = searchForm ? searchForm.querySelector('[data-search-summary]') : null;
         const statElements = {
             grupos: document.querySelector('[data-stat="grupos"]'),
             personas: document.querySelector('[data-stat="personas"]'),
@@ -880,6 +889,10 @@
 
         if (statusIndicator) {
             statusIndicator.textContent = '';
+        }
+
+        if (summaryContainer) {
+            summaryContainer.textContent = '';
         }
 
         const initialState = <%- JSON.stringify({
@@ -904,6 +917,46 @@
             },
             baseUrl: initialState.baseUrl || window.location.origin
         };
+
+        function getEmptyResultsMessage() {
+            const terminoActual = (state.filters?.termino || '').trim();
+            return terminoActual
+                ? `No se encontraron invitados que coincidan con "${terminoActual}".`
+                : 'No hay invitados para mostrar con los filtros seleccionados.';
+        }
+
+        function setSearchSummary(message = '') {
+            if (!summaryContainer) return;
+            summaryContainer.textContent = message || '';
+        }
+
+        function buildSearchSummary(invitadosLista) {
+            const total = Array.isArray(invitadosLista) ? invitadosLista.length : 0;
+            if (total === 0) {
+                return getEmptyResultsMessage();
+            }
+
+            const terminoActual = (state.filters?.termino || '').trim();
+            const estadoActual = (state.filters?.estado || 'todos').trim();
+            const partes = [`${total} invitado${total === 1 ? '' : 's'} encontrado${total === 1 ? '' : 's'}`];
+
+            if (terminoActual) {
+                partes.push(`para "${terminoActual}"`);
+            }
+
+            if (estadoActual && estadoActual.toLowerCase() !== 'todos') {
+                const estadoLabel = estadoActual.charAt(0).toUpperCase() + estadoActual.slice(1);
+                partes.push(`con estado ${estadoLabel}`);
+            }
+
+            return `${partes.join(' ')}.`;
+        }
+
+        function updateSearchSummary(invitadosLista) {
+            if (!summaryContainer) return;
+            const message = buildSearchSummary(invitadosLista);
+            setSearchSummary(message);
+        }
 
         function setLoading(isLoading) {
             const loading = Boolean(isLoading);
@@ -1049,6 +1102,7 @@
                 updateFormFields(state.filters);
                 renderStats(data.stats);
                 renderTable(data.invitados, state.baseUrl);
+                updateSearchSummary(data.invitados);
 
                 const combinedAlerts = [...extraAlerts, ...(data.alerts || [])];
                 renderAlerts(combinedAlerts);
@@ -1114,10 +1168,7 @@
                 const td = document.createElement('td');
                 td.colSpan = 7;
                 td.style.textAlign = 'center';
-                const terminoActual = state.filters.termino;
-                td.textContent = terminoActual
-                    ? `No se encontraron invitados que coincidan con "${terminoActual}".`
-                    : 'No hay invitados para mostrar con los filtros seleccionados.';
+                td.textContent = getEmptyResultsMessage();
                 tr.appendChild(td);
                 tableBody.appendChild(tr);
                 return;
@@ -1228,6 +1279,7 @@
         updateFormFields(state.filters);
         renderStats(initialState.stats);
         renderTable(initialState.invitados, state.baseUrl);
+        updateSearchSummary(initialState.invitados);
         renderAlerts(initialState.alerts || []);
 
         tableBody.addEventListener('click', async (event) => {
@@ -1272,6 +1324,7 @@
                 event.preventDefault();
                 state.filters = { termino: '', estado: 'todos' };
                 updateFormFields(state.filters);
+                setSearchSummary('');
                 loadInvitados(state.filters);
             });
         }
