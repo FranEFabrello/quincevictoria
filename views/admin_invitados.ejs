@@ -138,18 +138,112 @@
             border-radius: 16px;
             box-shadow: 0 12px 40px rgba(13, 27, 42, 0.08);
         }
+        .section-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 36px;
+        }
         .admin-section {
             scroll-margin-top: 32px;
-            padding-top: 8px;
-            margin-bottom: 40px;
-        }
-        .admin-section h2 {
-            margin-top: 0;
-            color: #0d1b2a;
         }
         .admin-section:target,
         .admin-section.is-active {
             animation: sectionHighlight 0.4s ease;
+        }
+        .section-block {
+            background: linear-gradient(160deg, rgba(239, 244, 255, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%);
+            border: 1px solid rgba(13, 27, 42, 0.08);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 18px 36px rgba(13, 27, 42, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+        .section-block--subtle {
+            background: white;
+        }
+        .section-block--table {
+            padding: 0;
+            overflow: hidden;
+        }
+        .section-block--table .section-header {
+            padding: 32px 32px 24px;
+            border-bottom: 1px solid rgba(13, 27, 42, 0.08);
+        }
+        .section-block--table .section-body {
+            padding: 0 32px 32px;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .section-header h2 {
+            margin: 0;
+            color: #0d1b2a;
+        }
+        .section-header .section-intro {
+            margin: 6px 0 0;
+            color: #6c757d;
+            max-width: 720px;
+        }
+        .section-body {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .section-columns {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+        .results-overview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            align-items: center;
+            background: rgba(13, 110, 253, 0.08);
+            border: 1px solid rgba(13, 110, 253, 0.18);
+            padding: 18px 22px;
+            border-radius: 14px;
+        }
+        .results-overview strong {
+            font-size: 1.15rem;
+            color: #0d1b2a;
+        }
+        .results-overview span {
+            color: #0d1b2a;
+        }
+        .results-overview__details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            align-items: center;
+        }
+        .results-overview__metric {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .results-overview__criteria {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            color: #0d1b2a;
+            font-size: 0.95rem;
+        }
+        .results-overview__empty {
+            color: #0d1b2a;
+            font-size: 0.95rem;
+        }
+        .results-overview[data-empty="true"] .results-overview__details {
+            display: none;
+        }
+        .results-overview[data-empty="false"] .results-overview__empty {
+            display: none;
         }
         @keyframes sectionHighlight {
             from { box-shadow: 0 0 0 rgba(13, 110, 253, 0); }
@@ -466,6 +560,9 @@
             .container {
                 padding: 28px 20px;
             }
+            .section-block {
+                padding: 24px;
+            }
             .sidebar-group-links {
                 flex-direction: row;
                 flex-wrap: wrap;
@@ -485,6 +582,9 @@
             }
             .container {
                 padding: 24px 16px;
+            }
+            .section-block {
+                padding: 20px;
             }
             .search-actions {
                 flex-direction: column;
@@ -559,192 +659,245 @@
                     </form>
                 </div>
             </header>
+            <div class="section-stack">
             <section id="carga" class="admin-section">
-                <h2>Carga y búsqueda</h2>
-                <p class="section-intro">Encontrá invitados específicos o subí listados completos sin pisar los registros existentes. Cada herramienta está separada para que puedas trabajar con tranquilidad.</p>
-                <div class="cards-grid">
-                    <article id="filtros" class="card" data-card-anchor>
-                        <h3>Búsqueda rápida</h3>
-                        <p>Filtrá por nombre o apellido para revisar, editar o eliminar una invitación en segundos.</p>
-                        <form class="search-form" data-search-form action="/admin/invitados" method="get">
-                            <label for="buscar">Buscar invitado</label>
-                            <input id="buscar" type="text" name="q" placeholder="Ej: María" value="<%= termino || '' %>">
-                            <label for="estado">Estado</label>
-                            <select id="estado" name="estado">
-                                <option value="todos" <%= estadoSeleccionado === 'todos' ? 'selected' : '' %>>Todos</option>
-                                <option value="confirmado" <%= estadoSeleccionado === 'confirmado' ? 'selected' : '' %>>Confirmados</option>
-                                <option value="pendiente" <%= estadoSeleccionado === 'pendiente' ? 'selected' : '' %>>Pendientes</option>
-                                <option value="rechazado" <%= estadoSeleccionado === 'rechazado' ? 'selected' : '' %>>Rechazados</option>
-                            </select>
-                            <div class="search-actions">
-                                <button type="submit" class="btn btn-search">Buscar</button>
-                                <a class="btn btn-secondary" href="/admin/invitados" data-action="clear">Limpiar</a>
+                <div class="section-block">
+                    <header class="section-header">
+                        <div>
+                            <h2>Carga y búsqueda</h2>
+                            <p class="section-intro">Encontrá invitados específicos o subí listados completos sin pisar los registros existentes. Cada herramienta está separada para que puedas trabajar con tranquilidad.</p>
+                        </div>
+                    </header>
+                    <div class="section-body">
+                        <% const filtrosActivos = Boolean((termino && termino.trim()) || (estadoSeleccionado && estadoSeleccionado !== 'todos')); %>
+                        <% const estadoLegible = estadoSeleccionado && estadoSeleccionado !== 'todos' ? estadoSeleccionado.charAt(0).toUpperCase() + estadoSeleccionado.slice(1) : 'Cualquier estado'; %>
+                        <div class="results-overview" data-results-overview data-empty="<%= filtrosActivos ? 'false' : 'true' %>">
+                            <div class="results-overview__empty" data-overview-empty>
+                                <strong>Vista completa.</strong>
+                                <span>Aplicá filtros para destacar los criterios activos y los resultados acá mismo.</span>
                             </div>
-                            <div class="search-status" role="status" aria-live="polite" aria-hidden="true" data-search-status>
-                                Buscando…
+                            <div class="results-overview__details" data-overview-details>
+                                <div class="results-overview__metric">
+                                    <strong data-overview-total><%= invitados.length %></strong>
+                                    <span data-overview-label><%= invitados.length === 1 ? 'invitación coincide' : 'invitaciones coinciden' %></span>
+                                </div>
+                                <div class="results-overview__criteria">
+                                    <span data-overview-termino><%= (termino && termino.trim()) ? `Nombre o apellido contiene “${termino.trim()}”` : 'Sin filtro por nombre' %></span>
+                                    <span data-overview-estado><%= estadoLegible === 'Cualquier estado' ? 'Estado: cualquier estado' : `Estado: ${estadoLegible}` %></span>
+                                </div>
                             </div>
-                            <div class="search-summary" data-search-summary aria-live="polite"></div>
-                        </form>
-                    </article>
-                    <article id="carga-masiva" class="card" data-card-anchor>
-                        <h3>Carga masiva</h3>
-                        <p>Importá un archivo XLSX, XLS o CSV. Los datos nuevos se agregan sin sobrescribir la información existente.</p>
-                        <form class="import-form" action="/upload" method="post" enctype="multipart/form-data">
-                            <label for="excel" class="visually-hidden">Seleccionar archivo</label>
-                            <input type="file" id="excel" name="excel" accept=".xlsx,.xls,.csv">
-                            <button type="submit" class="btn btn-import btn-icon">
-                                <span aria-hidden="true">⬆</span>
-                                Importar archivo
-                            </button>
-                        </form>
-                        <small style="color: #6c757d;">Consejo: descargá un respaldo antes de cargar un archivo nuevo.</small>
-                    </article>
-                </div>
-
-                <div class="alert-stack" data-alert-container aria-live="polite" aria-atomic="true">
-                    <% (alerts || []).forEach(alerta => { %>
-                        <div class="alert alert-<%= alerta.tipo %>"><%= alerta.texto %></div>
-                    <% }); %>
+                        </div>
+                        <div class="section-columns cards-grid">
+                            <article id="filtros" class="card" data-card-anchor>
+                                <h3>Búsqueda rápida</h3>
+                                <p>Filtrá por nombre o apellido para revisar, editar o eliminar una invitación en segundos.</p>
+                                <form class="search-form" data-search-form action="/admin/invitados" method="get">
+                                    <label for="buscar">Buscar invitado</label>
+                                    <input id="buscar" type="text" name="q" placeholder="Ej: María" value="<%= termino || '' %>">
+                                    <label for="estado">Estado</label>
+                                    <select id="estado" name="estado">
+                                        <option value="todos" <%= estadoSeleccionado === 'todos' ? 'selected' : '' %>>Todos</option>
+                                        <option value="confirmado" <%= estadoSeleccionado === 'confirmado' ? 'selected' : '' %>>Confirmados</option>
+                                        <option value="pendiente" <%= estadoSeleccionado === 'pendiente' ? 'selected' : '' %>>Pendientes</option>
+                                        <option value="rechazado" <%= estadoSeleccionado === 'rechazado' ? 'selected' : '' %>>Rechazados</option>
+                                    </select>
+                                    <div class="search-actions">
+                                        <button type="submit" class="btn btn-search">Buscar</button>
+                                        <a class="btn btn-secondary" href="/admin/invitados" data-action="clear">Limpiar</a>
+                                    </div>
+                                    <div class="search-status" role="status" aria-live="polite" aria-hidden="true" data-search-status>
+                                        Buscando…
+                                    </div>
+                                    <div class="search-summary" data-search-summary aria-live="polite"></div>
+                                </form>
+                            </article>
+                            <article id="carga-masiva" class="card" data-card-anchor>
+                                <h3>Carga masiva</h3>
+                                <p>Importá un archivo XLSX, XLS o CSV. Los datos nuevos se agregan sin sobrescribir la información existente.</p>
+                                <form class="import-form" action="/upload" method="post" enctype="multipart/form-data">
+                                    <label for="excel" class="visually-hidden">Seleccionar archivo</label>
+                                    <input type="file" id="excel" name="excel" accept=".xlsx,.xls,.csv">
+                                    <button type="submit" class="btn btn-import btn-icon">
+                                        <span aria-hidden="true">⬆</span>
+                                        Importar archivo
+                                    </button>
+                                </form>
+                                <small style="color: #6c757d;">Consejo: descargá un respaldo antes de cargar un archivo nuevo.</small>
+                            </article>
+                        </div>
+                        <div class="alert-stack" data-alert-container aria-live="polite" aria-atomic="true">
+                            <% (alerts || []).forEach(alerta => { %>
+                                <div class="alert alert-<%= alerta.tipo %>"><%= alerta.texto %></div>
+                            <% }); %>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <section id="descargas" class="admin-section">
-                <h2>Descargas</h2>
-                <div class="cards-grid">
-                    <div class="card download-card">
-                        <h3>Respaldos y reportes</h3>
-                        <p>Generá copias actualizadas para trabajar sin conexión o compartir con tu equipo.</p>
-                        <div class="download-actions">
-                            <a class="btn btn-backup btn-icon" href="/admin/backup">
-                                <span aria-hidden="true">💾</span>
-                                Descargar respaldo
-                            </a>
-                            <a class="btn btn-download btn-icon" href="/admin/descargar-links">
-                                <span aria-hidden="true">🔗</span>
-                                Links personalizados
-                            </a>
-                            <a class="btn btn-secondary btn-icon" href="/admin/descargar-confirmaciones">
-                                <span aria-hidden="true">✅</span>
-                                Confirmaciones
-                            </a>
+                <div class="section-block section-block--subtle">
+                    <header class="section-header">
+                        <div>
+                            <h2>Descargas</h2>
+                            <p class="section-intro">Generá copias actualizadas para trabajar sin conexión o compartir con tu equipo.</p>
                         </div>
-                        <form class="restore-form" action="/admin/restaurar-backup" method="post" enctype="multipart/form-data">
-                            <label for="backup" class="visually-hidden">Seleccionar archivo de respaldo</label>
-                            <input type="file" id="backup" name="backup" accept="application/json,.json" required>
-                            <button type="submit" class="btn btn-secondary btn-icon">
-                                <span aria-hidden="true">↩️</span>
-                                Restaurar respaldo
-                            </button>
-                        </form>
-                        <small style="color: #6c757d; display: block; margin-top: 0.5rem;">Al restaurar se reemplazarán los registros actuales por los del archivo seleccionado.</small>
+                    </header>
+                    <div class="section-body">
+                        <div class="cards-grid">
+                            <div class="card download-card">
+                                <h3>Respaldos y reportes</h3>
+                                <p>Elegí qué querés descargar o restaurar según la tarea que necesites completar.</p>
+                                <div class="download-actions">
+                                    <a class="btn btn-backup btn-icon" href="/admin/backup">
+                                        <span aria-hidden="true">💾</span>
+                                        Descargar respaldo
+                                    </a>
+                                    <a class="btn btn-download btn-icon" href="/admin/descargar-links">
+                                        <span aria-hidden="true">🔗</span>
+                                        Links personalizados
+                                    </a>
+                                    <a class="btn btn-secondary btn-icon" href="/admin/descargar-confirmaciones">
+                                        <span aria-hidden="true">✅</span>
+                                        Confirmaciones
+                                    </a>
+                                </div>
+                                <form class="restore-form" action="/admin/restaurar-backup" method="post" enctype="multipart/form-data">
+                                    <label for="backup" class="visually-hidden">Seleccionar archivo de respaldo</label>
+                                    <input type="file" id="backup" name="backup" accept="application/json,.json" required>
+                                    <button type="submit" class="btn btn-secondary btn-icon">
+                                        <span aria-hidden="true">↩️</span>
+                                        Restaurar respaldo
+                                    </button>
+                                </form>
+                                <small style="color: #6c757d; display: block; margin-top: 0.5rem;">Al restaurar se reemplazarán los registros actuales por los del archivo seleccionado.</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
             <section id="invitados" class="admin-section">
-                <h2>Resumen de invitados</h2>
-                <div class="stats">
-                    <div class="stat-card">
-                        <h3>Invitaciones (Grupos)</h3>
-                        <p style="color: #17a2b8;" data-stat="grupos"><%= invitados.length %></p>
+                <div class="section-block section-block--table">
+                    <header class="section-header">
+                        <div>
+                            <h2>Resumen de invitados</h2>
+                            <p class="section-intro">Visualizá el comportamiento general y accedé rápido al detalle para cada invitación.</p>
+                        </div>
+                    </header>
+                    <div class="section-body">
+                        <div class="stats">
+                            <div class="stat-card">
+                                <h3>Invitaciones (Grupos)</h3>
+                                <p style="color: #17a2b8;" data-stat="grupos"><%= invitados.length %></p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Invitados (Personas)</h3>
+                                <p style="color: #007bff;" data-stat="personas"><%= totalInvitados %></p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Asistentes (Personas)</h3>
+                                <p style="color: #28a745;" data-stat="confirmados"><%= confirmados %></p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Pendientes (Invitaciones)</h3>
+                                <p style="color: #6c757d;" data-stat="pendientes"><%= pendientes %></p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Rechazados (Invitaciones)</h3>
+                                <p style="color: #dc3545;" data-stat="rechazados"><%= rechazados %></p>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Apellido</th>
+                                    <th>Invitados (Grupo)</th>
+                                    <th>Asistirán</th>
+                                    <th>Estado</th>
+                                    <th>Link</th>
+                                    <th>Acciones</th>
+                                </tr>
+                                </thead>
+                                <tbody data-table-body>
+                                <% invitados.forEach(invitado => { %>
+                                    <tr>
+                                        <td><%= invitado.nombre %></td>
+                                        <td><%= invitado.apellido || '-' %></td>
+                                        <td><%= invitado.cantidad %></td>
+                                        <td><%= invitado.confirmados %></td>
+                                        <td>
+                                            <span class="status status-<%= invitado.estado.toLowerCase() %>">
+                                                <%= invitado.estado %>
+                                            </span>
+                                        </td>
+                                        <td class="link-cell">
+                                            <div class="link-cell-content">
+                                                <a class="link-cell-url" target="_blank" href="<%= baseUrl %>/confirmar/<%= invitado.id %>"><%= baseUrl %>/confirmar/<%= invitado.id %></a>
+                                                <% const nombreCompleto = [invitado.nombre, invitado.apellido || ''].filter(Boolean).join(' '); %>
+                                                <button type="button" class="btn-copy-link" data-action="copy-link" data-link="<%= baseUrl %>/confirmar/<%= invitado.id %>">
+                                                    <span aria-hidden="true">📋</span>
+                                                    <span class="btn-copy-link__label">Copiar link</span>
+                                                    <span class="visually-hidden"><%= nombreCompleto ? `de ${nombreCompleto}` : 'del invitado' %></span>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <a href="/admin/invitado/editar/<%= invitado.id %>" class="btn btn-edit">Editar</a>
+                                                <form action="/admin/invitado/eliminar/<%= invitado.id %>" method="POST" data-ajax-delete data-invitado-id="<%= invitado.id %>" data-invitado-nombre="<%= [invitado.nombre, invitado.apellido || ''].filter(Boolean).join(' ') %>">
+                                                    <button type="submit" class="btn btn-delete">Eliminar</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <h3>Invitados (Personas)</h3>
-                        <p style="color: #007bff;" data-stat="personas"><%= totalInvitados %></p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Asistentes (Personas)</h3>
-                        <p style="color: #28a745;" data-stat="confirmados"><%= confirmados %></p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Pendientes (Invitaciones)</h3>
-                        <p style="color: #6c757d;" data-stat="pendientes"><%= pendientes %></p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Rechazados (Invitaciones)</h3>
-                        <p style="color: #dc3545;" data-stat="rechazados"><%= rechazados %></p>
-                    </div>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Apellido</th>
-                            <th>Invitados (Grupo)</th>
-                            <th>Asistirán</th>
-                            <th>Estado</th>
-                            <th>Link</th>
-                            <th>Acciones</th>
-                        </tr>
-                        </thead>
-                        <tbody data-table-body>
-                        <% invitados.forEach(invitado => { %>
-                            <tr>
-                                <td><%= invitado.nombre %></td>
-                                <td><%= invitado.apellido || '-' %></td>
-                                <td><%= invitado.cantidad %></td>
-                                <td><%= invitado.confirmados %></td>
-                                <td>
-                                    <span class="status status-<%= invitado.estado.toLowerCase() %>">
-                                        <%= invitado.estado %>
-                                    </span>
-                                </td>
-                                <td class="link-cell">
-                                    <div class="link-cell-content">
-                                        <a class="link-cell-url" target="_blank" href="<%= baseUrl %>/confirmar/<%= invitado.id %>"><%= baseUrl %>/confirmar/<%= invitado.id %></a>
-                                        <% const nombreCompleto = [invitado.nombre, invitado.apellido || ''].filter(Boolean).join(' '); %>
-                                        <button type="button" class="btn-copy-link" data-action="copy-link" data-link="<%= baseUrl %>/confirmar/<%= invitado.id %>">
-                                            <span aria-hidden="true">📋</span>
-                                            <span class="btn-copy-link__label">Copiar link</span>
-                                            <span class="visually-hidden"><%= nombreCompleto ? `de ${nombreCompleto}` : 'del invitado' %></span>
-                                        </button>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <a href="/admin/invitado/editar/<%= invitado.id %>" class="btn btn-edit">Editar</a>
-                                        <form action="/admin/invitado/eliminar/<%= invitado.id %>" method="POST" data-ajax-delete data-invitado-id="<%= invitado.id %>" data-invitado-nombre="<%= [invitado.nombre, invitado.apellido || ''].filter(Boolean).join(' ') %>">
-                                            <button type="submit" class="btn btn-delete">Eliminar</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        <% }); %>
-                        </tbody>
-                    </table>
                 </div>
             </section>
 
             <section id="herramientas" class="admin-section">
-                <h2>Herramientas adicionales</h2>
-                <p class="section-intro">Atajos para mantener la base ordenada y realizar tareas de mantenimiento cuando sea necesario.</p>
-                <div class="cards-grid">
-                    <article id="herramientas-accesos" class="card tools-card" data-card-anchor>
-                        <h3>Accesos rápidos</h3>
-                        <p>Mantené tu listado actualizado y limpio con estas acciones frecuentes.</p>
-                        <% if (mensajeReset) { %>
-                            <div class="alert alert-exito"><%= mensajeReset %></div>
-                        <% } %>
-                        <ul>
-                            <li><a href="/admin/invitado/nuevo">Agregar una nueva invitación</a></li>
-                            <li><a href="/admin/invitados">Ver listado completo</a></li>
-                        </ul>
-                    </article>
-                    <article id="borrar-datos" class="card tools-card" data-card-anchor>
-                        <h3>Mantenimiento de datos</h3>
-                        <p>Cuando necesites reiniciar la lista, podés borrar todos los registros de manera segura. Descargá un respaldo antes de continuar.</p>
-                        <div class="tools-actions">
-                            <form action="/admin/borrar-todo" method="post" onsubmit="return confirm('¿Seguro que querés borrar todos los datos? Esta acción no se puede deshacer.');">
-                                <button type="submit" class="btn btn-delete btn-icon">
-                                    <span aria-hidden="true">🗑</span>
-                                    Borrar todos los invitados
-                                </button>
-                            </form>
+                <div class="section-block">
+                    <header class="section-header">
+                        <div>
+                            <h2>Herramientas adicionales</h2>
+                            <p class="section-intro">Atajos para mantener la base ordenada y realizar tareas de mantenimiento cuando sea necesario.</p>
                         </div>
-                    </article>
+                    </header>
+                    <div class="section-body">
+                        <div class="cards-grid">
+                            <article id="herramientas-accesos" class="card tools-card" data-card-anchor>
+                                <h3>Accesos rápidos</h3>
+                                <p>Mantené tu listado actualizado y limpio con estas acciones frecuentes.</p>
+                                <% if (mensajeReset) { %>
+                                    <div class="alert alert-exito"><%= mensajeReset %></div>
+                                <% } %>
+                                <ul>
+                                    <li><a href="/admin/invitado/nuevo">Agregar una nueva invitación</a></li>
+                                    <li><a href="/admin/invitados">Ver listado completo</a></li>
+                                </ul>
+                            </article>
+                            <article id="borrar-datos" class="card tools-card" data-card-anchor>
+                                <h3>Mantenimiento de datos</h3>
+                                <p>Cuando necesites reiniciar la lista, podés borrar todos los registros de manera segura. Descargá un respaldo antes de continuar.</p>
+                                <div class="tools-actions">
+                                    <form action="/admin/borrar-todo" method="post" onsubmit="return confirm('¿Seguro que querés borrar todos los datos? Esta acción no se puede deshacer.');">
+                                        <button type="submit" class="btn btn-delete btn-icon">
+                                            <span aria-hidden="true">🗑</span>
+                                            Borrar todos los invitados
+                                        </button>
+                                    </form>
+                                </div>
+                            </article>
+                        </div>
+                    </div>
                 </div>
             </section>
+            </div>
         </div>
     </main>
 </div>
@@ -879,6 +1032,11 @@
         const selectEstado = searchForm ? searchForm.querySelector('select[name="estado"]') : null;
         const statusIndicator = searchForm ? searchForm.querySelector('[data-search-status]') : null;
         const summaryContainer = searchForm ? searchForm.querySelector('[data-search-summary]') : null;
+        const overviewContainer = document.querySelector('[data-results-overview]');
+        const overviewTotal = overviewContainer ? overviewContainer.querySelector('[data-overview-total]') : null;
+        const overviewLabel = overviewContainer ? overviewContainer.querySelector('[data-overview-label]') : null;
+        const overviewTermino = overviewContainer ? overviewContainer.querySelector('[data-overview-termino]') : null;
+        const overviewEstado = overviewContainer ? overviewContainer.querySelector('[data-overview-estado]') : null;
         const statElements = {
             grupos: document.querySelector('[data-stat="grupos"]'),
             personas: document.querySelector('[data-stat="personas"]'),
@@ -965,6 +1123,48 @@
             if (!summaryContainer) return;
             const message = buildSearchSummary(invitadosLista);
             setSearchSummary(message);
+        }
+
+        function formatEstadoLabel(value) {
+            const estado = (value || '').trim();
+            if (!estado || estado.toLowerCase() === 'todos') {
+                return 'Estado: cualquier estado';
+            }
+            return `Estado: ${estado.charAt(0).toUpperCase() + estado.slice(1)}`;
+        }
+
+        function renderOverview(filters, invitadosLista) {
+            if (!overviewContainer) return;
+            const total = Array.isArray(invitadosLista) ? invitadosLista.length : 0;
+            const terminoActual = (filters?.termino || '').trim();
+            const estadoActual = (filters?.estado || 'todos').trim();
+            const hayFiltro = Boolean(terminoActual || (estadoActual && estadoActual.toLowerCase() !== 'todos'));
+
+            overviewContainer.dataset.empty = hayFiltro ? 'false' : 'true';
+
+            if (overviewTotal) {
+                overviewTotal.textContent = total;
+            }
+
+            if (overviewLabel) {
+                if (!hayFiltro) {
+                    overviewLabel.textContent = total === 1 ? 'invitación visible' : 'invitaciones visibles';
+                } else if (total === 0) {
+                    overviewLabel.textContent = 'sin resultados';
+                } else {
+                    overviewLabel.textContent = total === 1 ? 'invitación coincide' : 'invitaciones coinciden';
+                }
+            }
+
+            if (overviewTermino) {
+                overviewTermino.textContent = terminoActual
+                    ? `Nombre o apellido contiene “${terminoActual}”`
+                    : 'Sin filtro por nombre';
+            }
+
+            if (overviewEstado) {
+                overviewEstado.textContent = formatEstadoLabel(estadoActual);
+            }
         }
 
         function setLoading(isLoading) {
@@ -1112,6 +1312,7 @@
                 renderStats(data.stats);
                 renderTable(data.invitados, state.baseUrl);
                 updateSearchSummary(data.invitados);
+                renderOverview(state.filters, data.invitados);
 
                 const combinedAlerts = [...extraAlerts, ...(data.alerts || [])];
                 renderAlerts(combinedAlerts);
@@ -1289,6 +1490,7 @@
         renderStats(initialState.stats);
         renderTable(initialState.invitados, state.baseUrl);
         updateSearchSummary(initialState.invitados);
+        renderOverview(state.filters, initialState.invitados);
         renderAlerts(initialState.alerts || []);
 
         tableBody.addEventListener('click', async (event) => {
