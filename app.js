@@ -7,14 +7,11 @@ const XLSX = require("xlsx");
 const session = require("express-session");
 const compression = require("compression");
 const db = require("./db/client");
-const aiConfig = require("./config/ai");
 
 const app = express();
 const upload = multer({ dest: "uploads/" });
 const ESTADOS_VALIDOS = new Set(["pendiente", "confirmado", "rechazado"]);
 const isProduction = process.env.NODE_ENV === "production";
-const eventCostPerPersonARS = Number.parseFloat(process.env.EVENT_COSTO_POR_INVITADO_ARS || "0") || 0;
-const eventCapacityPlanned = Number.parseInt(process.env.EVENT_CAPACIDAD_MAXIMA || "0", 10) || 0;
 
 const CLAVE_CORRECTA = "Victoria2025**";
 
@@ -46,13 +43,6 @@ const assetCacheOptions = {
 
 // app.use("/admin", checkAdmin, express.static("public"));
 
-if (!aiConfig.isConfigured) {
-    const missingVars = aiConfig.missing.length ? aiConfig.missing.join(", ") : "AI_API_KEY, AI_MODEL";
-    console.warn(`[IA] Configuración incompleta. Definí las variables: ${missingVars}.`);
-}
-
-app.locals.ai = aiConfig.getPublicConfig();
-
 function checkAdmin(req, res, next) {
     if (req.session && req.session.adminAutenticado) return next();
     // Permite el acceso a la página de login sin estar autenticado
@@ -63,104 +53,6 @@ function checkAdmin(req, res, next) {
 function wantsJson(req) {
     const accept = req.headers.accept || "";
     return req.xhr || accept.includes("application/json");
-}
-
-function toNumber(value) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function roundTo(value, digits) {
-    if (!Number.isFinite(value)) return 0;
-    const factor = 10 ** digits;
-    return Math.round(value * factor) / factor;
-}
-
-function buildAnalytics(invitados) {
-    const totalGrupos = Array.isArray(invitados) ? invitados.length : 0;
-    let totalPersonas = 0;
-    let totalConfirmados = 0;
-    let gruposPendientes = 0;
-    let gruposConfirmados = 0;
-    let gruposRechazados = 0;
-    let personasPendientes = 0;
-    let personasRechazadas = 0;
-    let gruposConAsistenciaParcial = 0;
-
-    for (const invitado of invitados || []) {
-        const cantidad = toNumber(invitado?.cantidad);
-        const confirmados = toNumber(invitado?.confirmados);
-        const estado = (invitado?.estado || "").toLowerCase();
-
-        totalPersonas += cantidad;
-        totalConfirmados += confirmados;
-
-        if (estado === "pendiente") {
-            gruposPendientes += 1;
-            personasPendientes += Math.max(cantidad - confirmados, 0);
-        } else if (estado === "confirmado") {
-            gruposConfirmados += 1;
-            if (confirmados < cantidad) {
-                gruposConAsistenciaParcial += 1;
-                personasPendientes += Math.max(cantidad - confirmados, 0);
-            }
-        } else if (estado === "rechazado") {
-            gruposRechazados += 1;
-            personasRechazadas += cantidad;
-        } else {
-            personasPendientes += Math.max(cantidad - confirmados, 0);
-        }
-    }
-
-    const gruposRespondieron = gruposConfirmados + gruposRechazados;
-    const capacidadDisponible = Math.max(totalPersonas - totalConfirmados, 0);
-    const porcentajeConfirmacion = totalPersonas > 0 ? roundTo((totalConfirmados / totalPersonas) * 100, 1) : 0;
-    const porcentajeRespuesta = totalGrupos > 0 ? roundTo((gruposRespondieron / totalGrupos) * 100, 1) : 0;
-    const promedioPersonasGrupo = totalGrupos > 0 ? roundTo(totalPersonas / totalGrupos, 1) : 0;
-    const promedioAsistentesPorGrupoConfirmado = gruposConfirmados > 0 ? roundTo(totalConfirmados / gruposConfirmados, 1) : 0;
-
-    const capacidadRestanteEvento = eventCapacityPlanned > 0
-        ? Math.max(eventCapacityPlanned - totalConfirmados, 0)
-        : 0;
-    const porcentajeOcupacionPlaneada = eventCapacityPlanned > 0
-        ? roundTo((totalConfirmados / eventCapacityPlanned) * 100, 1)
-        : 0;
-
-    const costoConfirmadosARS = eventCostPerPersonARS > 0 ? roundTo(totalConfirmados * eventCostPerPersonARS, 2) : 0;
-    const costoPendienteARS = eventCostPerPersonARS > 0 ? roundTo(personasPendientes * eventCostPerPersonARS, 2) : 0;
-
-    return {
-        totalGrupos,
-        totalPersonas,
-        confirmados: totalConfirmados,
-        pendientes: gruposPendientes,
-        rechazados: gruposRechazados,
-        personasPendientes,
-        personasRechazadas,
-        capacidadDisponible,
-        porcentajeConfirmacion,
-        porcentajeRespuesta,
-        gruposRespondieron,
-        gruposConAsistenciaParcial,
-        promedioPersonasGrupo,
-        promedioAsistentesPorGrupoConfirmado,
-        costoPorPersonaARS: eventCostPerPersonARS,
-        costoConfirmadosARS,
-        costoPendienteARS,
-        capacidadPlaneada: eventCapacityPlanned,
-        capacidadRestanteEvento,
-        porcentajeOcupacionPlaneada,
-        distribucionGrupos: {
-            confirmado: gruposConfirmados,
-            pendiente: gruposPendientes,
-            rechazado: gruposRechazados
-        },
-        distribucionPersonas: {
-            confirmadas: totalConfirmados,
-            pendientes: personasPendientes,
-            rechazadas: personasRechazadas
-        }
-    };
 }
 
 function normalizarNumero(valor) {
@@ -767,12 +659,15 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
         const whereClause = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
         const sql = `SELECT * FROM invitados ${whereClause} ORDER BY nombre`;
         const invitados = await db.many(sql, parametros);
-        const analytics = buildAnalytics(invitados);
 
-        const totalInvitados = analytics.totalPersonas;
-        const confirmados = analytics.confirmados;
-        const pendientes = analytics.distribucionGrupos.pendiente;
-        const rechazados = analytics.distribucionGrupos.rechazado;
+        let totalInvitados = 0;
+        let confirmados = 0;
+        invitados.forEach(r => {
+            totalInvitados += Number(r.cantidad) || 0;
+            confirmados += Number(r.confirmados) || 0;
+        });
+        const pendientes = invitados.filter(r => r.estado === "pendiente").length;
+        const rechazados = invitados.filter(r => r.estado === "rechazado").length;
         const baseUrl = req.protocol + "://" + req.get("host");
 
         const mensajeExito = req.query.exito === "1" ? "Invitado eliminado correctamente." : null;
@@ -893,8 +788,13 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
             return res.json({
                 ok: true,
                 invitados,
-                stats: analytics,
-                ai: aiConfig.getPublicConfig(),
+                stats: {
+                    totalGrupos: invitados.length,
+                    totalPersonas: totalInvitados,
+                    confirmados,
+                    pendientes,
+                    rechazados
+                },
                 baseUrl,
                 termino: termino || "",
                 estadoSeleccionado,
@@ -917,9 +817,7 @@ app.get("/admin/invitados", checkAdmin, async (req, res) => {
             termino,
             estadoSeleccionado,
             alerts,
-            importSummary: importSummaryData,
-            stats: analytics,
-            ai: aiConfig.getPublicConfig()
+            importSummary: importSummaryData
         });
     } catch (error) {
         console.error("Error al obtener invitados:", error);
