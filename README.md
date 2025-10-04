@@ -39,3 +39,26 @@ Tras ejecutar el comando, el servidor (`app.js`) entregará automáticamente las
 ## Respaldos de la base de datos
 
 El panel de administración ofrece una ruta de respaldo que exporta los registros de `invitados` a un archivo JSON ordenado por nombre. Este archivo se guarda temporalmente en la carpeta `backups/` y luego se ofrece para su descarga. Podés versionar o almacenar el JSON resultante en tu proveedor de confianza para contar con una copia remota de la información.
+
+## Configuración de la IA
+
+La integración con el asistente de inteligencia artificial se configura en `config/ai.js`. Definí las siguientes variables de entorno antes de iniciar la aplicación:
+
+- `AI_API_KEY` (**obligatorio**): clave privada del proveedor elegido.
+- `AI_MODEL` (**obligatorio**): identificador exacto del modelo a utilizar.
+- `AI_PROVIDER` (opcional): nombre del proveedor, por defecto `openai`.
+- `AI_ENDPOINT` (opcional): URL del endpoint si necesitás uno personalizado.
+- `AI_LOCALE` (opcional): locale preferido para las respuestas, por defecto `es-AR`.
+
+El panel de administración muestra el estado de la configuración. Cuando falten variables obligatorias, se indicará qué valores están pendientes para facilitar el ajuste.
+
+## Panel analítico ampliado
+
+El panel de invitados incluye métricas avanzadas para tomar decisiones logísticas y presupuestarias. Además de los totales por estado, se calculan tasas de confirmación y respuesta, cupos disponibles y promedios por invitación. Los datos se presentan en tarjetas descriptivas y gráficos con leyendas explícitas (barras para grupos y gráfico de torta/donut para personas).
+
+Variables opcionales para personalizar los cálculos:
+
+- `EVENT_COSTO_POR_INVITADO_ARS`: define un costo unitario en pesos argentinos para estimar la inversión confirmada y potencial.
+- `EVENT_CAPACIDAD_MAXIMA`: establece el cupo total planificado para calcular ocupación y lugares disponibles.
+
+Si configurás estos valores, el panel añadirá métricas de presupuesto y capacidad con formato `$ (ARS)` para evitar ambigüedades en la moneda.
